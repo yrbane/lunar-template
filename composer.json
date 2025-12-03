@@ -8,6 +8,10 @@
         {
             "type": "path",
             "url": "../lunar-cli"
+        },
+        {
+            "type": "path",
+            "url": "../lunar-config"
         }
     ],
     "keywords": ["template", "engine", "php", "templating", "inheritance", "blocks", "macros"],
@@ -27,7 +31,8 @@
     "require": {
         "php": ">=8.3",
         "ext-mbstring": "*",
-        "yrbane/lunar-cli": "@dev"
+        "yrbane/lunar-cli": "@dev",
+        "yrbane/lunar-config": "@dev"
     },
     "bin": [
         "bin/lunar-template"
