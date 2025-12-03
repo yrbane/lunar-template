@@ -3,31 +3,46 @@
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
-         cacheDirectory="tests/.phpunit.cache"
-         testdox="true">
-    
+         cacheDirectory=".phpunit.cache"
+         testdox="true"
+         stopOnFailure="false"
+         failOnWarning="true"
+         failOnRisky="true">
+
     <testsuites>
-        <testsuite name="Lunar Template Test Suite">
-            <directory>tests</directory>
+        <testsuite name="All">
+            <directory suffix="Test.php">tests</directory>
+        </testsuite>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">tests/Unit</directory>
+            <directory suffix="Test.php">tests/Exception</directory>
+            <directory suffix="Test.php">tests/Macro</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory suffix="Test.php">tests/Integration</directory>
         </testsuite>
     </testsuites>
-    
+
     <source>
         <include>
-            <directory>src</directory>
+            <directory suffix=".php">src</directory>
         </include>
     </source>
-    
+
     <coverage>
         <report>
-            <html outputDirectory="tests/coverage/html"/>
-            <text outputFile="tests/coverage/coverage.txt"/>
-            <clover outputFile="tests/coverage/clover.xml"/>
+            <html outputDirectory="coverage/html"/>
+            <text outputFile="coverage/coverage.txt" showOnlySummary="true"/>
+            <clover outputFile="coverage/clover.xml"/>
         </report>
     </coverage>
-    
+
     <php>
         <ini name="error_reporting" value="-1"/>
         <ini name="memory_limit" value="-1"/>
     </php>
+
+    <logging>
+        <testdoxHtml outputFile="coverage/testdox.html"/>
+    </logging>
 </phpunit>
