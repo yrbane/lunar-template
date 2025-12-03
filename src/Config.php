@@ -1,8 +1,10 @@
 <?php
+
 /**
  * Configuration helper for lunar-template.
  *
  * @since 1.0.0
+ *
  * @author seb@nethttp.net
  */
 declare(strict_types=1);
@@ -24,8 +26,8 @@ final class Config
     /**
      * Get a configuration value.
      *
-     * @param string $key     Dot notation key (e.g., 'template.template_path')
-     * @param mixed  $default Default value if key not found
+     * @param string $key Dot notation key (e.g., 'template.template_path')
+     * @param mixed $default Default value if key not found
      *
      * @return mixed
      */

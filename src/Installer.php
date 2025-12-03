@@ -30,14 +30,14 @@ final class Installer
     private static function copyConfig(Event $event): void
     {
         $vendorDir = $event->getComposer()->getConfig()->get('vendor-dir');
-        $projectRoot = dirname($vendorDir);
+        $projectRoot = \dirname($vendorDir);
 
         $source = __DIR__ . '/../config/template.json.dist';
         $destination = $projectRoot . '/config/template.json';
 
         // Only copy if destination doesn't exist
         if (!file_exists($destination)) {
-            $configDir = dirname($destination);
+            $configDir = \dirname($destination);
 
             if (!is_dir($configDir)) {
                 mkdir($configDir, 0o755, true);

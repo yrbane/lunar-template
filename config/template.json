@@ -1,0 +1,7 @@
+{
+    "template": {
+        "template_path": "templates",
+        "cache_path": "template",
+        "extension": "tpl"
+    }
+}

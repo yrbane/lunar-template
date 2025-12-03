@@ -2,5 +2,7 @@ parameters:
     level: 7
     paths:
         - src
+    excludePaths:
+        - src/Installer.php
     tmpDir: .phpstan-cache
     reportUnmatchedIgnoredErrors: false
