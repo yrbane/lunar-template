@@ -3,6 +3,8 @@
 [![PHP Version](https://img.shields.io/badge/php-%5E8.3-blue.svg)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+[Fran&ccedil;ais](README.fr.md)
+
 **Lunar Template Engine** is a standalone, advanced template engine for PHP 8.3+ featuring template inheritance, blocks, macros, and intelligent caching.
 
 ## Features
@@ -48,7 +50,7 @@ echo $html;
 ### Variables
 
 ```html
-<!-- Simple variable -->
+<!-- Simple variable (auto-escaped) -->
 <h1>[[ title ]]</h1>
 
 <!-- Object property -->
@@ -56,6 +58,9 @@ echo $html;
 
 <!-- Array access -->
 <span>[[ tags.0 ]]</span>
+
+<!-- Raw output (NOT escaped - use with caution) -->
+<div>[[! trustedHtml !]]</div>
 ```
 
 ### Conditions
@@ -103,7 +108,7 @@ echo $html;
     
     <footer>
         [% block footer %]
-            <p>&copy; 2024 My Website</p>
+            <p>&copy; 2025 My Website</p>
         [% endblock %]
     </footer>
 </body>
@@ -208,19 +213,33 @@ $macros = $engine->getRegisteredMacros();
 
 ```php
 use Lunar\Template\Exception\TemplateException;
+use Lunar\Template\Exception\TemplateNotFoundException;
+use Lunar\Template\Exception\SyntaxException;
+use Lunar\Template\Exception\CircularInheritanceException;
 
 try {
-    $html = $engine->render('non-existent-template');
+    $html = $engine->render('blog/article', $data);
+} catch (TemplateNotFoundException $e) {
+    // Template file does not exist
+    echo "Template not found: " . $e->getTemplatePath();
+} catch (SyntaxException $e) {
+    // Template has syntax errors
+    echo "Syntax error at line " . $e->getLine() . ": " . $e->getMessage();
+} catch (CircularInheritanceException $e) {
+    // Circular extends detected (e.g., A extends B extends A)
+    echo "Circular inheritance: " . implode(' -> ', $e->getChain());
 } catch (TemplateException $e) {
+    // Any other template error
     echo "Template error: " . $e->getMessage();
 }
 ```
 
 ## Security
 
-- **XSS Protection**: All variables are automatically HTML-escaped
-- **Path Validation**: Template paths are validated and normalized
-- **Safe Compilation**: Compiled templates are stored securely
+- **XSS Protection**: All variables are automatically HTML-escaped by default
+- **Raw Output Opt-in**: Use `[[! var !]]` syntax only for trusted HTML content
+- **Path Validation**: Template paths are validated to prevent directory traversal attacks
+- **Safe Compilation**: Compiled templates are stored only in designated cache directories
 
 ## Performance
 
