@@ -231,12 +231,12 @@ class TemplateRendererTest extends TestCase
         $this->renderer->render('one');
         $this->renderer->render('two');
 
-        $cacheFiles = glob($this->cachePath . '/*.php');
+        $cacheFiles = glob($this->cachePath . '/*.php') ?: [];
         $this->assertCount(2, $cacheFiles);
 
         $this->renderer->clearCache('one');
 
-        $cacheFiles = glob($this->cachePath . '/*.php');
+        $cacheFiles = glob($this->cachePath . '/*.php') ?: [];
         $this->assertCount(1, $cacheFiles);
     }
 

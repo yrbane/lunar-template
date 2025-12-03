@@ -68,7 +68,7 @@ class CacheWarmerTest extends TestCase
         $this->assertTrue($result);
 
         // Cache should have the compiled content
-        $files = glob($this->cacheDir . '/*.php');
+        $files = glob($this->cacheDir . '/*.php') ?: [];
         $this->assertCount(1, $files);
     }
 
