@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lunar\Template\Tests;
@@ -7,20 +8,23 @@ use Lunar\Template\AdvancedTemplateEngine;
 use Lunar\Template\Exception\TemplateException;
 use Lunar\Template\Macro\MacroInterface;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class AdvancedTemplateEngineTest extends TestCase
 {
     private string $templatesDir;
+
     private string $cacheDir;
+
     private AdvancedTemplateEngine $engine;
 
     protected function setUp(): void
     {
         $this->templatesDir = sys_get_temp_dir() . '/lunar-template-tests-' . uniqid();
         $this->cacheDir = sys_get_temp_dir() . '/lunar-cache-tests-' . uniqid();
-        
-        mkdir($this->templatesDir, 0755, true);
-        
+
+        mkdir($this->templatesDir, 0o755, true);
+
         $this->engine = new AdvancedTemplateEngine($this->templatesDir, $this->cacheDir);
     }
 
@@ -37,8 +41,9 @@ class AdvancedTemplateEngineTest extends TestCase
         if (!is_dir($dir)) {
             return;
         }
-        
-        $files = array_diff(scandir($dir), ['.', '..']);
+
+        $scanResult = scandir($dir);
+        $files = $scanResult !== false ? array_diff($scanResult, ['.', '..']) : [];
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
             is_dir($path) ? $this->removeDirectory($path) : unlink($path);
@@ -48,9 +53,9 @@ class AdvancedTemplateEngineTest extends TestCase
 
     private function createTemplate(string $name, string $content): void
     {
-        $dir = dirname($this->templatesDir . '/' . $name);
+        $dir = \dirname($this->templatesDir . '/' . $name);
         if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            mkdir($dir, 0o755, true);
         }
         file_put_contents($this->templatesDir . '/' . $name . '.tpl', $content);
     }
@@ -65,22 +70,22 @@ class AdvancedTemplateEngineTest extends TestCase
     {
         $this->expectException(TemplateException::class);
         $this->expectExceptionMessage('does not exist');
-        
+
         new AdvancedTemplateEngine('/non/existent/path', $this->cacheDir);
     }
 
     public function testConstructorThrowsExceptionForUnreadableTemplateDir(): void
     {
         $unreadableDir = sys_get_temp_dir() . '/unreadable-' . uniqid();
-        mkdir($unreadableDir, 0000);
-        
+        mkdir($unreadableDir, 0o000);
+
         $this->expectException(TemplateException::class);
         $this->expectExceptionMessage('is not readable');
-        
+
         try {
             new AdvancedTemplateEngine($unreadableDir, $this->cacheDir);
         } finally {
-            chmod($unreadableDir, 0755);
+            chmod($unreadableDir, 0o755);
             rmdir($unreadableDir);
         }
     }
@@ -88,18 +93,18 @@ class AdvancedTemplateEngineTest extends TestCase
     public function testRenderSimpleTemplate(): void
     {
         $this->createTemplate('simple', 'Hello [[ name ]]!');
-        
+
         $result = $this->engine->render('simple', ['name' => 'World']);
-        
+
         $this->assertSame('Hello World!', $result);
     }
 
     public function testRenderTemplateWithVariableDefaults(): void
     {
         $this->createTemplate('with-defaults', 'Title: [[ title ]] - Lang: [[ lang ]]');
-        
+
         $result = $this->engine->render('with-defaults', ['title' => 'My Page']);
-        
+
         $this->assertStringContainsString('Title: My Page', $result);
         $this->assertStringContainsString('Lang: en', $result);
     }
@@ -108,7 +113,7 @@ class AdvancedTemplateEngineTest extends TestCase
     {
         $this->expectException(TemplateException::class);
         $this->expectExceptionMessage('Template not found');
-        
+
         $this->engine->render('nonexistent');
     }
 
@@ -116,12 +121,12 @@ class AdvancedTemplateEngineTest extends TestCase
     {
         $template = '[% if showGreeting %]Hello [[ name ]]![% endif %]';
         $this->createTemplate('conditionals', $template);
-        
+
         $result = $this->engine->render('conditionals', [
             'showGreeting' => true,
-            'name' => 'World'
+            'name' => 'World',
         ]);
-        
+
         $this->assertSame('Hello World!', $result);
     }
 
@@ -129,11 +134,11 @@ class AdvancedTemplateEngineTest extends TestCase
     {
         $template = '[% if type == "admin" %]Admin[% elseif type == "user" %]User[% else %]Guest[% endif %]';
         $this->createTemplate('elseif', $template);
-        
+
         $resultAdmin = $this->engine->render('elseif', ['type' => 'admin']);
         $resultUser = $this->engine->render('elseif', ['type' => 'user']);
         $resultGuest = $this->engine->render('elseif', ['type' => 'other']);
-        
+
         $this->assertSame('Admin', $resultAdmin);
         $this->assertSame('User', $resultUser);
         $this->assertSame('Guest', $resultGuest);
@@ -143,9 +148,9 @@ class AdvancedTemplateEngineTest extends TestCase
     {
         $template = '[% for item in items %][[ item ]], [% endfor %]';
         $this->createTemplate('loops', $template);
-        
+
         $result = $this->engine->render('loops', ['items' => ['A', 'B', 'C']]);
-        
+
         $this->assertSame('A, B, C, ', $result);
     }
 
@@ -153,32 +158,32 @@ class AdvancedTemplateEngineTest extends TestCase
     {
         // Parent template
         $parentTemplate = <<<'TPL'
-<html>
-<head>
-    <title>[% block title %]Default Title[% endblock %]</title>
-</head>
-<body>
-    [% block content %]Default content[% endblock %]
-</body>
-</html>
-TPL;
+            <html>
+            <head>
+                <title>[% block title %]Default Title[% endblock %]</title>
+            </head>
+            <body>
+                [% block content %]Default content[% endblock %]
+            </body>
+            </html>
+            TPL;
         $this->createTemplate('base', $parentTemplate);
 
         // Child template
         $childTemplate = <<<'TPL'
-[% extends 'base.tpl' %]
+            [% extends 'base.tpl' %]
 
-[% block title %]My Page[% endblock %]
+            [% block title %]My Page[% endblock %]
 
-[% block content %]
-    <h1>Welcome!</h1>
-    <p>This is my page content.</p>
-[% endblock %]
-TPL;
+            [% block content %]
+                <h1>Welcome!</h1>
+                <p>This is my page content.</p>
+            [% endblock %]
+            TPL;
         $this->createTemplate('child', $childTemplate);
 
         $result = $this->engine->render('child');
-        
+
         $this->assertStringContainsString('<title>My Page</title>', $result);
         $this->assertStringContainsString('<h1>Welcome!</h1>', $result);
         $this->assertStringContainsString('<p>This is my page content.</p>', $result);
@@ -188,48 +193,48 @@ TPL;
     {
         $childTemplate = '[% extends "nonexistent.tpl" %]';
         $this->createTemplate('child', $childTemplate);
-        
+
         $this->expectException(TemplateException::class);
         $this->expectExceptionMessage('Parent template not found');
-        
+
         $this->engine->render('child');
     }
 
     public function testRenderWithMacros(): void
     {
-        $this->engine->registerMacro('greet', function($name) {
+        $this->engine->registerMacro('greet', function ($name) {
             return "Hello, {$name}!";
         });
-        
+
         $template = '##greet("World")##';
         $this->createTemplate('macros', $template);
-        
+
         $result = $this->engine->render('macros');
-        
+
         $this->assertSame('Hello, World!', $result);
     }
 
     public function testRegisterMacroInstance(): void
     {
-        $macro = new class implements MacroInterface {
+        $macro = new class () implements MacroInterface {
             public function getName(): string
             {
                 return 'test';
             }
-            
+
             public function execute(array $args): string
             {
                 return 'Test: ' . ($args[0] ?? 'default');
             }
         };
-        
+
         $this->engine->registerMacroInstance($macro);
-        
+
         $template = '##test("value")##';
         $this->createTemplate('macro-instance', $template);
-        
+
         $result = $this->engine->render('macro-instance');
-        
+
         $this->assertSame('Test: value', $result);
     }
 
@@ -237,14 +242,14 @@ TPL;
     {
         $this->expectException(TemplateException::class);
         $this->expectExceptionMessage('is not defined');
-        
+
         $this->engine->callMacro('undefined', []);
     }
 
     public function testTemplateExists(): void
     {
         $this->createTemplate('exists', 'content');
-        
+
         $this->assertTrue($this->engine->templateExists('exists'));
         $this->assertFalse($this->engine->templateExists('nonexistent'));
     }
@@ -252,19 +257,19 @@ TPL;
     public function testClearCache(): void
     {
         $this->createTemplate('cacheable', 'Hello World');
-        
+
         // Render to create cache
         $this->engine->render('cacheable');
-        
+
         // Verify cache file exists
-        $cacheFiles = glob($this->cacheDir . '/*.php');
+        $cacheFiles = glob($this->cacheDir . '/*.php') ?: [];
         $this->assertCount(1, $cacheFiles);
-        
+
         // Clear cache
         $this->engine->clearCache();
-        
+
         // Verify cache is cleared
-        $cacheFiles = glob($this->cacheDir . '/*.php');
+        $cacheFiles = glob($this->cacheDir . '/*.php') ?: [];
         $this->assertCount(0, $cacheFiles);
     }
 
@@ -272,28 +277,28 @@ TPL;
     {
         $this->createTemplate('template1', 'Template 1');
         $this->createTemplate('template2', 'Template 2');
-        
+
         // Render both to create cache
         $this->engine->render('template1');
         $this->engine->render('template2');
-        
-        $cacheFiles = glob($this->cacheDir . '/*.php');
+
+        $cacheFiles = glob($this->cacheDir . '/*.php') ?: [];
         $this->assertCount(2, $cacheFiles);
-        
+
         // Clear specific template cache
         $this->engine->clearCache('template1');
-        
-        $cacheFiles = glob($this->cacheDir . '/*.php');
+
+        $cacheFiles = glob($this->cacheDir . '/*.php') ?: [];
         $this->assertCount(1, $cacheFiles);
     }
 
     public function testGetRegisteredMacros(): void
     {
-        $this->engine->registerMacro('test1', function() { return 'test1'; });
-        $this->engine->registerMacro('test2', function() { return 'test2'; });
-        
+        $this->engine->registerMacro('test1', function () { return 'test1'; });
+        $this->engine->registerMacro('test2', function () { return 'test2'; });
+
         $macros = $this->engine->getRegisteredMacros();
-        
+
         $this->assertCount(2, $macros);
         $this->assertArrayHasKey('test1', $macros);
         $this->assertArrayHasKey('test2', $macros);
@@ -303,35 +308,35 @@ TPL;
     {
         // Create a temporary macro directory
         $macroDir = sys_get_temp_dir() . '/macros-' . uniqid();
-        mkdir($macroDir, 0755, true);
-        
+        mkdir($macroDir, 0o755, true);
+
         // Create a test macro class
         $macroCode = <<<'PHP'
-<?php
-namespace TestMacros;
-use Lunar\Template\Macro\MacroInterface;
+            <?php
+            namespace TestMacros;
+            use Lunar\Template\Macro\MacroInterface;
 
-class TestMacro implements MacroInterface
-{
-    public function getName(): string
-    {
-        return 'test_directory';
-    }
-    
-    public function execute(array $args): string
-    {
-        return 'Directory macro: ' . ($args[0] ?? 'default');
-    }
-}
-PHP;
+            class TestMacro implements MacroInterface
+            {
+                public function getName(): string
+                {
+                    return 'test_directory';
+                }
+                
+                public function execute(array $args): string
+                {
+                    return 'Directory macro: ' . ($args[0] ?? 'default');
+                }
+            }
+            PHP;
         file_put_contents($macroDir . '/TestMacro.php', $macroCode);
-        
+
         try {
             $this->engine->loadMacrosFromDirectory('TestMacros', $macroDir);
-            
+
             $macros = $this->engine->getRegisteredMacros();
             $this->assertArrayHasKey('test_directory', $macros);
-            
+
             $result = $this->engine->callMacro('test_directory', ['value']);
             $this->assertSame('Directory macro: value', $result);
         } finally {
@@ -344,7 +349,7 @@ PHP;
     {
         // Should not throw exception, just silently do nothing
         $this->engine->loadMacrosFromDirectory('NonExistent', '/non/existent/path');
-        
+
         $macros = $this->engine->getRegisteredMacros();
         $this->assertEmpty($macros);
     }
@@ -352,15 +357,15 @@ PHP;
     public function testCacheInvalidationOnTemplateChange(): void
     {
         $this->createTemplate('changeable', 'Version 1');
-        
+
         // First render
         $result1 = $this->engine->render('changeable');
         $this->assertSame('Version 1', $result1);
-        
+
         // Simulate file modification time change
         sleep(1);
         $this->createTemplate('changeable', 'Version 2');
-        
+
         // Second render should use new content
         $result2 = $this->engine->render('changeable');
         $this->assertSame('Version 2', $result2);
@@ -369,11 +374,11 @@ PHP;
     public function testXssProtection(): void
     {
         $this->createTemplate('xss', 'Value: [[ value ]]');
-        
+
         $result = $this->engine->render('xss', [
-            'value' => '<script>alert("xss")</script>'
+            'value' => '<script>alert("xss")</script>',
         ]);
-        
+
         $this->assertStringContainsString('&lt;script&gt;', $result);
         $this->assertStringContainsString('&lt;/script&gt;', $result);
     }
@@ -381,29 +386,28 @@ PHP;
     public function testComplexNestedStructures(): void
     {
         $template = <<<'TPL'
-[% if users %]
-<ul>
-[% for user in users %]
-    <li>
-        [[ user.name ]]
-        [% if user.admin %] (Admin)[% endif %]
-        [% if user.posts %]
-        <ul>
-        [% for post in user.posts %]
-            <li>[[ post.title ]]</li>
-        [% endfor %]
-        </ul>
-        [% endif %]
-    </li>
-[% endfor %]
-</ul>
-[% else %]
-<p>No users found</p>
-[% endif %]
-TPL;
-        
+            [% if users %]
+            <ul>
+            [% for user in users %]
+                <li>
+                    [[ user.name ]][% if user.admin %] (Admin)[% endif %]
+                    [% if user.posts %]
+                    <ul>
+                    [% for post in user.posts %]
+                        <li>[[ post.title ]]</li>
+                    [% endfor %]
+                    </ul>
+                    [% endif %]
+                </li>
+            [% endfor %]
+            </ul>
+            [% else %]
+            <p>No users found</p>
+            [% endif %]
+            TPL;
+
         $this->createTemplate('complex', $template);
-        
+
         $data = [
             'users' => [
                 [
@@ -411,19 +415,19 @@ TPL;
                     'admin' => true,
                     'posts' => [
                         ['title' => 'Post 1'],
-                        ['title' => 'Post 2']
-                    ]
+                        ['title' => 'Post 2'],
+                    ],
                 ],
                 [
                     'name' => 'Jane',
                     'admin' => false,
-                    'posts' => []
-                ]
-            ]
+                    'posts' => [],
+                ],
+            ],
         ];
-        
+
         $result = $this->engine->render('complex', $data);
-        
+
         $this->assertStringContainsString('John (Admin)', $result);
         $this->assertStringContainsString('Jane', $result);
         $this->assertStringNotContainsString('Jane (Admin)', $result);
@@ -436,14 +440,14 @@ TPL;
         // Test with backslashes
         $engineWindows = new AdvancedTemplateEngine(
             str_replace('/', '\\', $this->templatesDir),
-            str_replace('/', '\\', $this->cacheDir . '_normalized')
+            str_replace('/', '\\', $this->cacheDir . '_normalized'),
         );
-        
+
         $this->createTemplate('normalized', 'Normalized path test');
-        
+
         $result = $engineWindows->render('normalized');
         $this->assertSame('Normalized path test', $result);
-        
+
         // Cleanup
         $this->removeDirectory($this->cacheDir . '_normalized');
     }
@@ -451,18 +455,18 @@ TPL;
     public function testVariableWithDollarPrefix(): void
     {
         $this->createTemplate('dollar', 'Hello [[ $name ]]!');
-        
+
         $result = $this->engine->render('dollar', ['name' => 'World']);
-        
+
         $this->assertSame('Hello World!', $result);
     }
 
     public function testEmptyVariableExpression(): void
     {
         $this->createTemplate('empty', 'Value: [[  ]]');
-        
+
         $result = $this->engine->render('empty');
-        
+
         // Should handle empty expression gracefully
         $this->assertStringContainsString('Value:', $result);
     }
@@ -470,25 +474,147 @@ TPL;
     public function testBlockInheritanceWithoutOverride(): void
     {
         $parentTemplate = <<<'TPL'
-<html>
-<body>
-    [% block content %]Default content[% endblock %]
-    [% block sidebar %]Default sidebar[% endblock %]
-</body>
-</html>
-TPL;
+            <html>
+            <body>
+                [% block content %]Default content[% endblock %]
+                [% block sidebar %]Default sidebar[% endblock %]
+            </body>
+            </html>
+            TPL;
         $this->createTemplate('parent', $parentTemplate);
 
         $childTemplate = <<<'TPL'
-[% extends 'parent.tpl' %]
+            [% extends 'parent.tpl' %]
 
-[% block content %]New content[% endblock %]
-TPL;
+            [% block content %]New content[% endblock %]
+            TPL;
         $this->createTemplate('child_partial', $childTemplate);
 
         $result = $this->engine->render('child_partial');
-        
+
         $this->assertStringContainsString('New content', $result);
         $this->assertStringContainsString('Default sidebar', $result);
+    }
+
+    public function testMacroWithNumericArgument(): void
+    {
+        $this->engine->registerMacro('double', function ($num) {
+            return $num * 2;
+        });
+
+        $template = '##double(21)##';
+        $this->createTemplate('macro-numeric', $template);
+
+        $result = $this->engine->render('macro-numeric');
+
+        $this->assertSame('42', $result);
+    }
+
+    public function testMacroWithBooleanArgument(): void
+    {
+        $this->engine->registerMacro('toggle', function ($value) {
+            return $value ? 'yes' : 'no';
+        });
+
+        $template = '##toggle(true)## / ##toggle(false)##';
+        $this->createTemplate('macro-bool', $template);
+
+        $result = $this->engine->render('macro-bool');
+
+        $this->assertSame('yes / no', $result);
+    }
+
+    public function testMacroWithNullArgument(): void
+    {
+        $this->engine->registerMacro('nullable', function ($value) {
+            return $value ?? 'default';
+        });
+
+        $template = '##nullable(null)##';
+        $this->createTemplate('macro-null', $template);
+
+        $result = $this->engine->render('macro-null');
+
+        $this->assertSame('default', $result);
+    }
+
+    public function testNumericArrayIndex(): void
+    {
+        $template = 'First: [[ items.0 ]], Second: [[ items.1 ]]';
+        $this->createTemplate('numeric-index', $template);
+
+        $result = $this->engine->render('numeric-index', [
+            'items' => ['Apple', 'Banana', 'Cherry'],
+        ]);
+
+        $this->assertSame('First: Apple, Second: Banana', $result);
+    }
+
+    public function testConditionWithLogicalOperators(): void
+    {
+        $template = '[% if total > 0 and isActive %]Valid[% endif %]';
+        $this->createTemplate('logical-condition', $template);
+
+        $result = $this->engine->render('logical-condition', [
+            'total' => 5,
+            'isActive' => true,
+        ]);
+
+        $this->assertSame('Valid', $result);
+    }
+
+    public function testConditionWithEmpty(): void
+    {
+        // Test that empty() works with variables
+        $template = '[% if empty(items) %]No items[% else %]Has items[% endif %]';
+        $this->createTemplate('empty-condition', $template);
+
+        $resultEmpty = $this->engine->render('empty-condition', ['items' => []]);
+        $resultFilled = $this->engine->render('empty-condition', ['items' => ['a', 'b']]);
+
+        $this->assertSame('No items', $resultEmpty);
+        $this->assertSame('Has items', $resultFilled);
+    }
+
+    public function testTemplateThrowsExceptionDuringExecution(): void
+    {
+        // Create a template that will throw an exception during execution
+        $template = '<?php throw new \RuntimeException("Test exception"); ?>';
+        file_put_contents($this->templatesDir . '/exception.tpl', $template);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Test exception');
+
+        $this->engine->render('exception');
+    }
+
+    public function testCacheDirectoryNotWritable(): void
+    {
+        $readOnlyCacheDir = sys_get_temp_dir() . '/readonly-cache-' . uniqid();
+        mkdir($readOnlyCacheDir, 0o555);
+
+        try {
+            $this->expectException(TemplateException::class);
+            $this->expectExceptionMessage('is not writable');
+
+            new AdvancedTemplateEngine($this->templatesDir, $readOnlyCacheDir);
+        } finally {
+            chmod($readOnlyCacheDir, 0o755);
+            rmdir($readOnlyCacheDir);
+        }
+    }
+
+    public function testMacroWithEmptyArguments(): void
+    {
+        $this->engine->registerMacro('noargs', function () {
+            return 'called';
+        });
+
+        $template = '##noargs()##';
+        $this->createTemplate('macro-noargs', $template);
+
+        $result = $this->engine->render('macro-noargs');
+
+        $this->assertSame('called', $result);
     }
 }
