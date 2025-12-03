@@ -26,7 +26,7 @@
 ## Installation
 
 ```bash
-composer require lunar/template
+composer require yrbane/lunar-template
 ```
 
 ## Demarrage rapide
@@ -100,6 +100,139 @@ $warmer->warmRecursive(); // Precompiler tous les templates
 <!-- Acces imbrique -->
 <p>[[ user.profile.email ]]</p>
 ```
+
+### Sortie brute (sans echappement)
+
+Utilisez la syntaxe `[[! ... !]]` pour afficher du contenu sans echappement HTML :
+
+```html
+<!-- Sortie brute - SANS echappement (uniquement pour contenu de confiance !) -->
+[[! htmlContent !]]
+
+<!-- Avec filtres -->
+[[! trustedHtml | trim !]]
+
+<!-- Pour le contenu utilisateur, preferez le filtre raw -->
+[[ content | raw ]]
+```
+
+> **Attention** : N'utilisez `[[! !]]` qu'avec du contenu de confiance. Pour les entrees utilisateur, utilisez toujours la syntaxe `[[ ]]` avec echappement automatique.
+
+### Filtres
+
+Les filtres transforment les valeurs des variables avec la syntaxe pipe :
+
+```html
+<!-- Filtre simple -->
+<h1>[[ title | upper ]]</h1>
+
+<!-- Filtres enchaines -->
+<p>[[ text | trim | lower | slug ]]</p>
+
+<!-- Filtre avec arguments -->
+<p>[[ price | number_format(2) ]]</p>
+<p>[[ description | truncate(100, "...") ]]</p>
+
+<!-- Sortie brute (sans echappement) -->
+<div>[[ htmlContent | raw ]]</div>
+```
+
+#### Filtres integres
+
+**Filtres de chaines :**
+- `upper` - Majuscules
+- `lower` - Minuscules
+- `capitalize` - Premiere lettre en majuscule
+- `title` - Casse de titre
+- `trim`, `ltrim`, `rtrim` - Supprimer les espaces
+- `slug` - Slug URL
+- `truncate(length, suffix)` - Tronquer le texte
+- `excerpt(length)` - Extrait intelligent
+- `wordwrap(width)` - Retour a la ligne
+- `reverse` - Inverser la chaine
+- `repeat(times)` - Repeter
+- `pad_left(length, char)`, `pad_right(length, char)` - Remplir
+- `replace(search, replace)` - Remplacer
+- `split(delimiter)` - Diviser en tableau
+
+**Filtres numeriques :**
+- `number_format(decimals, dec_point, thousands_sep)` - Formater un nombre
+- `round(precision)` - Arrondir
+- `floor`, `ceil` - Arrondir vers le bas/haut
+- `abs` - Valeur absolue
+- `currency(symbol)` - Formater en devise
+- `percent(decimals)` - Formater en pourcentage
+- `ordinal` - Suffixe ordinal (1st, 2nd, 3rd)
+- `filesize(decimals)` - Taille de fichier lisible
+
+**Filtres de tableaux :**
+- `first`, `last` - Premier/dernier element
+- `length` - Longueur du tableau/chaine
+- `keys`, `values` - Cles/valeurs du tableau
+- `sort(key, direction)` - Trier
+- `slice(start, length)` - Extraire une portion
+- `merge(array)` - Fusionner
+- `unique` - Supprimer les doublons
+- `join(glue, lastGlue)` - Joindre en chaine
+- `chunk(size)` - Diviser en morceaux
+- `pluck(key)` - Extraire les valeurs par cle
+- `filter(key, value)` - Filtrer
+- `map(filter)` - Appliquer un filtre a chaque element
+- `group_by(key)` - Grouper par cle
+- `random` - Element aleatoire
+- `shuffle` - Melanger
+
+**Filtres de dates :**
+- `date(format)` - Formater une date
+- `ago` - Temps relatif (ex: "il y a 5 minutes")
+- `relative` - Date relative (ex: "hier")
+
+**Filtres d'encodage :**
+- `base64_encode`, `base64_decode` - Base64
+- `url_encode`, `url_decode` - Encodage URL
+- `json_encode(pretty)`, `json_decode` - JSON
+- `md5`, `sha1`, `sha256` - Hachage
+
+**Filtres HTML :**
+- `raw` - Sans echappement (attention !)
+- `escape(strategy)` - Echapper (html, js, css, url)
+- `striptags(allowed)` - Supprimer les balises HTML
+- `nl2br` - Nouvelles lignes en `<br>`
+- `spaceless` - Supprimer les espaces entre balises
+
+**Filtres de mise en forme HTML :**
+- `markdown` - Convertir Markdown en HTML (gras, italique, liens, titres, listes, code)
+- `linkify(target)` - Convertir automatiquement URLs et emails en liens cliquables
+- `list(type, class)` - Convertir un tableau en liste HTML (`<ul>` ou `<ol>`)
+- `table(hasHeader, class)` - Convertir un tableau 2D en table HTML
+- `attributes` - Convertir un tableau en attributs HTML
+- `wrap(tag, class, id)` - Envelopper le contenu dans une balise HTML
+- `highlight(term, class)` - Surligner les termes recherchés avec `<mark>`
+- `paragraph`, `p` - Convertir les blocs de texte en paragraphes `<p>`
+- `heading`, `h` - Créer un titre HTML (h1-h6) : `[[ titre | h(2) ]]`
+- `anchor`, `a` - Créer un lien : `[[ url | a("Cliquez ici") ]]`
+- `excerpt_html(length, suffix)` - Extraire le texte et créer un extrait
+- `class_list` - Construire une chaîne de classes CSS à partir d'un tableau
+
+**Filtres d'éléments HTML :**
+- `div(class, id)` - Envelopper dans `<div>` : `[[ contenu | div("container") ]]`
+- `span(class, id)` - Envelopper dans `<span>` : `[[ texte | span("highlight") ]]`
+- `strong(class)` - Envelopper dans `<strong>` : `[[ texte | strong ]]`
+- `em(class)` - Envelopper dans `<em>` (italique) : `[[ texte | em ]]`
+- `small(class)` - Envelopper dans `<small>` : `[[ texte | small ]]`
+- `code(language)` - Envelopper dans `<code>` : `[[ code | code("php") ]]`
+- `pre(class)` - Envelopper dans `<pre>` : `[[ texte | pre ]]`
+- `blockquote(cite, class)` - Créer une citation avec attribution optionnelle
+- `abbr(title)` - Créer une abréviation : `[[ "HTML" | abbr("HyperText Markup Language") ]]`
+- `time(format, class)` - Créer un élément `<time>` avec attribut datetime
+- `img(alt, class, lazy)` - Créer `<img>` : `[[ url | img("Texte alt", "photo", true) ]]`
+- `video(autoplay, loop, muted, class)` - Créer `<video>` avec contrôles
+- `audio(autoplay, loop, class)` - Créer `<audio>` avec contrôles
+- `iframe(title, class, lazy)` - Créer `<iframe>` avec allowfullscreen
+- `progress(max, class)` - Créer barre `<progress>` : `[[ 75 | progress ]]`
+- `meter(min, max, low, high)` - Créer jauge `<meter>`
+- `badge(variant)` - Créer badge : `[[ "Nouveau" | badge("success") ]]`
+- `button(type, class, disabled)` - Créer `<button>` : `[[ "Envoyer" | button("submit", "btn") ]]`
 
 ### Conditions
 
@@ -242,6 +375,8 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 ```
 
 **Macros integrees :**
+
+#### Macros de base
 ```html
 <!-- URLs des assets -->
 <link rel="stylesheet" href="##asset('/css/app.css')##">
@@ -249,6 +384,148 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 <!-- Formatage de date -->
 <time>##date('j F Y')##</time>
 <time>##date('Y-m-d', article.publishedAt)##</time>
+```
+
+#### Macros utilitaires
+```html
+<!-- Generation UUID -->
+##uuid()##                              <!-- ex: 550e8400-e29b-41d4-a716-446655440000 -->
+
+<!-- Valeurs aleatoires -->
+##random()##                            <!-- Aleatoire 0-100 -->
+##random(1, 10)##                       <!-- Aleatoire 1-10 -->
+##random("string", 16)##                <!-- Chaine hexadecimale -->
+##random("alpha", 8)##                  <!-- Lettres aleatoires -->
+
+<!-- Lorem ipsum -->
+##lorem()##                             <!-- 1 paragraphe -->
+##lorem(3)##                            <!-- 3 paragraphes -->
+##lorem("words", 10)##                  <!-- 10 mots -->
+
+<!-- Heure actuelle -->
+##now()##                               <!-- Timestamp Unix -->
+##now("Y-m-d")##                        <!-- Date formatee -->
+##now("iso")##                          <!-- ISO 8601 -->
+
+<!-- Pluralisation -->
+##pluralize(5, "article", "articles")## <!-- "5 articles" -->
+
+<!-- Formatage monetaire -->
+##money(99.99, "EUR")##                 <!-- 99,99 € -->
+##money(50, "USD")##                    <!-- $50.00 -->
+
+<!-- Masquage de donnees -->
+##mask("jean@exemple.fr", "email")##    <!-- j***@exemple.fr -->
+
+<!-- Manipulation de couleurs -->
+##color("primary")##                    <!-- #4F46E5 -->
+##color("#FF0000", "lighten", 20)##     <!-- Eclaircir de 20% -->
+
+<!-- Temps relatif -->
+##timeago(timestamp)##                  <!-- "il y a 5 minutes" -->
+
+<!-- Compte a rebours -->
+##countdown("2025-12-31")##             <!-- "28 jours, 5 heures" -->
+```
+
+#### Macros de securite
+```html
+<!-- Protection CSRF -->
+##csrf()##                              <!-- Champ input cache -->
+##csrf("token")##                       <!-- Valeur du token uniquement -->
+##csrf("meta")##                        <!-- Balise meta -->
+
+<!-- Nonce CSP -->
+##nonce()##                             <!-- Valeur du nonce -->
+##nonce("script")##                     <!-- Attribut nonce="..." -->
+
+<!-- Protection anti-spam Honeypot -->
+##honeypot()##                          <!-- Champ honeypot cache -->
+```
+
+#### Macros de formulaire
+```html
+<!-- Elements input -->
+##input("email", "email")##
+##input("nom", "text", "Jean")##
+
+<!-- Zone de texte -->
+##textarea("message")##
+
+<!-- Liste deroulante -->
+##select("pays", pays, "FR", "Choisir...")##
+
+<!-- Cases a cocher & Boutons radio -->
+##checkbox("accepter", "1", false, "J'accepte")##
+##radio("genre", "homme", false, "Homme")##
+
+<!-- Autres elements -->
+##label("email", "Adresse email")##
+##hidden("user_id", "123")##
+##method("PUT")##                       <!-- Spoofing de methode -->
+```
+
+#### Macros HTML/Meta
+```html
+<!-- Script & Style -->
+##script("/js/app.js", "defer")##
+##style("/css/app.css")##
+
+<!-- Balises meta -->
+##meta("description", "Description de la page")##
+
+<!-- Open Graph -->
+##og("title", "Titre de la page")##
+
+<!-- Twitter Cards -->
+##twitter("card", "summary_large_image")##
+
+<!-- SEO -->
+##canonical("https://exemple.fr/page")##
+##favicon("/favicon.ico")##
+
+<!-- Schema.org JSON-LD -->
+##schema("Organization", data)##
+
+<!-- Fil d'Ariane -->
+##breadcrumbs(items)##
+
+<!-- Icones -->
+##icon("user")##                        <!-- Heroicons outline -->
+##icon("fa-home", "fa")##               <!-- Font Awesome -->
+```
+
+#### Macros Image/Media
+```html
+<!-- Gravatar -->
+##gravatar("email@exemple.fr", 200)##
+
+<!-- Avatars UI -->
+##avatar("Jean Dupont", 100)##
+
+<!-- Images placeholder -->
+##placeholder(800, 600)##
+
+<!-- Codes QR -->
+##qrcode("https://exemple.fr")##
+```
+
+#### Macros d'integration
+```html
+<!-- YouTube -->
+##youtube("dQw4w9WgXcQ")##
+
+<!-- Vimeo -->
+##vimeo("123456789")##
+```
+
+#### Macros de partage social
+```html
+##share("twitter", "https://exemple.fr", "Regardez ca !")##
+##share("facebook", "https://exemple.fr")##
+##share("linkedin", "https://exemple.fr", "Titre")##
+##share("email", "https://exemple.fr", "Sujet", "Corps")##
+##share("whatsapp", "https://exemple.fr", "Message")##
 ```
 
 ## Architecture
@@ -261,6 +538,7 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 | `TemplateCompiler` | Compile la syntaxe du template en code PHP |
 | `TemplateRenderer` | Rend les templates avec injection de variables |
 | `InheritanceResolver` | Gere l'heritage multi-niveaux des templates |
+| `FilterRegistry` | Gestion centralisee des filtres avec 50+ filtres integres |
 | `FilesystemCache` | Cache de templates base sur le systeme de fichiers |
 | `CacheWarmer` | Precompile les templates pour la production |
 | `MacroRegistry` | Gestion centralisee des macros |
@@ -334,6 +612,39 @@ $registry
 if ($registry->has('greet')) {
     $result = $registry->call('greet', ['Monde']);
 }
+```
+
+### Filtres personnalises
+
+```php
+<?php
+use Lunar\Template\Filter\FilterInterface;
+
+class HighlightFilter implements FilterInterface
+{
+    public function getName(): string
+    {
+        return 'highlight';
+    }
+
+    public function apply(mixed $value, array $args = []): string
+    {
+        $term = $args[0] ?? '';
+        return str_replace($term, "<mark>$term</mark>", (string) $value);
+    }
+}
+
+// Enregistrer avec le renderer
+$renderer->registerFilterInstance(new HighlightFilter());
+
+// Ou enregistrer un simple callable
+$renderer->registerFilter('double', fn($value) => $value * 2);
+```
+
+**Utilisation dans un template :**
+```html
+<p>[[ text | highlight("terme recherche") ]]</p>
+<p>Total : [[ count | double ]]</p>
 ```
 
 ### Directives personnalisees
@@ -436,6 +747,40 @@ Les contributions sont les bienvenues ! Veuillez lire notre [Guide de contributi
 Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de details.
 
 ## Journal des modifications
+
+### v1.4.0
+- **Syntaxe de sortie brute** : `[[! contenu !]]` pour affichage sans echappement
+- **40+ Nouvelles Macros** :
+  - Utilitaires : `uuid`, `random`, `lorem`, `now`, `dump`, `json`, `pluralize`, `money`, `mask`, `initials`, `color`, `timeago`, `countdown`
+  - Securite : `csrf`, `nonce`, `honeypot`
+  - Formulaires : `input`, `textarea`, `select`, `checkbox`, `radio`, `label`, `hidden`, `method`
+  - HTML/Meta : `script`, `style`, `meta`, `og`, `twitter`, `canonical`, `favicon`, `schema`, `breadcrumbs`, `icon`
+  - Image/Media : `gravatar`, `avatar`, `placeholder`, `qrcode`
+  - Integration : `youtube`, `vimeo`
+  - Social : `share` (twitter, facebook, linkedin, email, whatsapp, telegram, reddit, pinterest)
+- **DefaultMacros** : Enregistrement de toutes les macros integrees en une fois
+
+### v1.3.0
+- **Filtres de mise en forme HTML** : 12 filtres pour la génération HTML
+- `markdown`, `linkify`, `list`, `table`, `attributes`, `wrap`
+- `highlight`, `paragraph`, `heading`, `anchor`, `excerpt_html`, `class_list`
+- **Filtres d'éléments HTML** : 18 nouveaux filtres pour les éléments HTML
+- Texte : `div`, `span`, `strong`, `em`, `small`, `code`, `pre`, `blockquote`, `abbr`
+- Média : `img`, `video`, `audio`, `iframe`
+- UI : `time`, `progress`, `meter`, `badge`, `button`
+- **Alias** : `p` (paragraph), `h` (heading), `a` (anchor)
+
+### v1.2.0
+- **Système de filtres** : 50+ filtres intégrés avec syntaxe pipe `[[ var | filtre ]]`
+- Filtres de chaînes : `upper`, `lower`, `capitalize`, `title`, `trim`, `slug`, `truncate`, `excerpt`, `replace`, `split`
+- Filtres numériques : `number_format`, `round`, `floor`, `ceil`, `abs`, `currency`, `percent`, `ordinal`, `filesize`
+- Filtres de tableaux : `first`, `last`, `length`, `keys`, `values`, `sort`, `slice`, `merge`, `unique`, `join`, `chunk`, `pluck`, `filter`, `map`, `group_by`, `random`, `shuffle`
+- Filtres de dates : `date`, `ago`, `relative`
+- Filtres d'encodage : `base64_encode`, `base64_decode`, `url_encode`, `url_decode`, `json_encode`, `json_decode`, `md5`, `sha1`, `sha256`
+- Filtres HTML : `raw`, `escape`, `striptags`, `nl2br`, `spaceless`
+- Support du chaînage de filtres : `[[ texte | trim | upper | slug ]]`
+- Enregistrement de filtres personnalisés via `FilterInterface`
+- `FilterRegistry` pour la gestion centralisée des filtres
 
 ### v1.1.0
 - Architecture modulaire (Parser, Compiler, Renderer)

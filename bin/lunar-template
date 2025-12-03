@@ -1,0 +1,46 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Find autoloader
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',           // When installed locally
+    __DIR__ . '/../../../autoload.php',            // When installed as a dependency
+];
+
+$autoloader = null;
+foreach ($autoloadPaths as $path) {
+    if (file_exists($path)) {
+        $autoloader = $path;
+        break;
+    }
+}
+
+if ($autoloader === null) {
+    fwrite(STDERR, "Error: Composer autoloader not found.\n");
+    fwrite(STDERR, "Please run 'composer install' first.\n");
+    exit(1);
+}
+
+require $autoloader;
+
+use Lunar\Cli\Application;
+use Lunar\Template\Command\CheckCommand;
+use Lunar\Template\Command\ClearCommand;
+use Lunar\Template\Command\CompileCommand;
+use Lunar\Template\Command\ListCommand;
+use Lunar\Template\Command\RenderCommand;
+use Lunar\Template\Command\WarmCommand;
+
+$app = new Application('Lunar Template', '1.4.0');
+
+// Register all commands
+$app->registerCommandClass(RenderCommand::class);
+$app->registerCommandClass(CompileCommand::class);
+$app->registerCommandClass(WarmCommand::class);
+$app->registerCommandClass(ClearCommand::class);
+$app->registerCommandClass(CheckCommand::class);
+$app->registerCommandClass(ListCommand::class);
+
+exit($app->run($argv));

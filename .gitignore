@@ -48,6 +48,7 @@ Thumbs.db
 
 # PHPStan
 phpstan.neon.local
+.phpstan-cache/
 
 # Temporary files
 *.tmp

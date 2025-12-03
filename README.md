@@ -26,7 +26,7 @@
 ## Installation
 
 ```bash
-composer require lunar/template
+composer require yrbane/lunar-template
 ```
 
 ## Quick Start
@@ -100,6 +100,139 @@ $warmer->warmRecursive(); // Precompile all templates
 <!-- Nested access -->
 <p>[[ user.profile.email ]]</p>
 ```
+
+### Raw Output (No Escaping)
+
+Use `[[! ... !]]` syntax to output content without HTML escaping:
+
+```html
+<!-- Raw output - NO escaping (use with trusted content only!) -->
+[[! htmlContent !]]
+
+<!-- With filters -->
+[[! trustedHtml | trim !]]
+
+<!-- For user-generated content, prefer the raw filter instead -->
+[[ content | raw ]]
+```
+
+> **Warning**: Only use `[[! !]]` with trusted content. For user input, always use regular `[[ ]]` syntax with automatic escaping.
+
+### Filters
+
+Filters transform variable values using the pipe syntax:
+
+```html
+<!-- Single filter -->
+<h1>[[ title | upper ]]</h1>
+
+<!-- Chained filters -->
+<p>[[ text | trim | lower | slug ]]</p>
+
+<!-- Filter with arguments -->
+<p>[[ price | number_format(2) ]]</p>
+<p>[[ description | truncate(100, "...") ]]</p>
+
+<!-- Raw output (no escaping) -->
+<div>[[ htmlContent | raw ]]</div>
+```
+
+#### Built-in Filters
+
+**String Filters:**
+- `upper` - Uppercase
+- `lower` - Lowercase
+- `capitalize` - Capitalize first letter
+- `title` - Title Case
+- `trim`, `ltrim`, `rtrim` - Trim whitespace
+- `slug` - URL-friendly slug
+- `truncate(length, suffix)` - Truncate text
+- `excerpt(length)` - Smart excerpt
+- `wordwrap(width)` - Word wrap
+- `reverse` - Reverse string
+- `repeat(times)` - Repeat string
+- `pad_left(length, char)`, `pad_right(length, char)` - Pad string
+- `replace(search, replace)` - Replace text
+- `split(delimiter)` - Split into array
+
+**Number Filters:**
+- `number_format(decimals, dec_point, thousands_sep)` - Format number
+- `round(precision)` - Round number
+- `floor`, `ceil` - Round down/up
+- `abs` - Absolute value
+- `currency(symbol)` - Format as currency
+- `percent(decimals)` - Format as percentage
+- `ordinal` - Ordinal suffix (1st, 2nd, 3rd)
+- `filesize(decimals)` - Human-readable file size
+
+**Array Filters:**
+- `first`, `last` - First/last element
+- `length` - Array/string length
+- `keys`, `values` - Array keys/values
+- `sort(key, direction)` - Sort array
+- `slice(start, length)` - Slice array
+- `merge(array)` - Merge arrays
+- `unique` - Remove duplicates
+- `join(glue, lastGlue)` - Join to string
+- `chunk(size)` - Split into chunks
+- `pluck(key)` - Extract values by key
+- `filter(key, value)` - Filter array
+- `map(filter)` - Apply filter to each element
+- `group_by(key)` - Group by key
+- `random` - Random element
+- `shuffle` - Shuffle array
+
+**Date Filters:**
+- `date(format)` - Format date
+- `ago` - Relative time (e.g., "5 minutes ago")
+- `relative` - Relative date (e.g., "yesterday")
+
+**Encoding Filters:**
+- `base64_encode`, `base64_decode` - Base64
+- `url_encode`, `url_decode` - URL encoding
+- `json_encode(pretty)`, `json_decode` - JSON
+- `md5`, `sha1`, `sha256` - Hashing
+
+**HTML Filters:**
+- `raw` - No escaping (use with caution!)
+- `escape(strategy)` - Escape (html, js, css, url)
+- `striptags(allowed)` - Strip HTML tags
+- `nl2br` - Newlines to `<br>`
+- `spaceless` - Remove whitespace between tags
+
+**HTML Formatting Filters:**
+- `markdown` - Convert Markdown to HTML (bold, italic, links, headers, lists, code)
+- `linkify(target)` - Auto-convert URLs and emails to clickable links
+- `list(type, class)` - Convert array to HTML list (`<ul>` or `<ol>`)
+- `table(hasHeader, class)` - Convert 2D array to HTML table
+- `attributes` - Convert array to HTML attributes string
+- `wrap(tag, class, id)` - Wrap content in HTML tag
+- `highlight(term, class)` - Highlight search terms with `<mark>`
+- `paragraph`, `p` - Convert text blocks to `<p>` paragraphs
+- `heading`, `h` - Create HTML heading (h1-h6): `[[ title | h(2) ]]`
+- `anchor`, `a` - Create anchor/link: `[[ url | a("Click here") ]]`
+- `excerpt_html(length, suffix)` - Strip HTML and create excerpt
+- `class_list` - Build CSS class string from array
+
+**HTML Element Filters:**
+- `div(class, id)` - Wrap in `<div>`: `[[ content | div("container") ]]`
+- `span(class, id)` - Wrap in `<span>`: `[[ text | span("highlight") ]]`
+- `strong(class)` - Wrap in `<strong>`: `[[ text | strong ]]`
+- `em(class)` - Wrap in `<em>` (italic): `[[ text | em ]]`
+- `small(class)` - Wrap in `<small>`: `[[ text | small ]]`
+- `code(language)` - Wrap in `<code>`: `[[ code | code("php") ]]`
+- `pre(class)` - Wrap in `<pre>`: `[[ text | pre ]]`
+- `blockquote(cite, class)` - Create blockquote with optional citation
+- `abbr(title)` - Create abbreviation: `[[ "HTML" | abbr("HyperText Markup Language") ]]`
+- `time(format, class)` - Create `<time>` element with datetime attribute
+- `img(alt, class, lazy)` - Create `<img>`: `[[ url | img("Alt text", "photo", true) ]]`
+- `video(autoplay, loop, muted, class)` - Create `<video>` with controls
+- `audio(autoplay, loop, class)` - Create `<audio>` with controls
+- `iframe(title, class, lazy)` - Create `<iframe>` with allowfullscreen
+- `progress(max, class)` - Create `<progress>` bar: `[[ 75 | progress ]]`
+- `meter(min, max, low, high)` - Create `<meter>` gauge
+- `badge(variant)` - Create badge: `[[ "New" | badge("success") ]]`
+- `button(type, class, disabled)` - Create `<button>`: `[[ "Submit" | button("submit", "btn") ]]`
 
 ### Conditions
 
@@ -242,6 +375,8 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 ```
 
 **Built-in macros:**
+
+#### Core Macros
 ```html
 <!-- Asset URLs -->
 <link rel="stylesheet" href="##asset('/css/app.css')##">
@@ -249,6 +384,200 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 <!-- Date formatting -->
 <time>##date('F j, Y')##</time>
 <time>##date('Y-m-d', article.publishedAt)##</time>
+```
+
+#### Utility Macros
+```html
+<!-- UUID generation -->
+##uuid()##                              <!-- e.g., 550e8400-e29b-41d4-a716-446655440000 -->
+
+<!-- Random values -->
+##random()##                            <!-- Random 0-100 -->
+##random(1, 10)##                       <!-- Random 1-10 -->
+##random("string", 16)##                <!-- Random hex string -->
+##random("alpha", 8)##                  <!-- Random letters -->
+##random("alnum", 12)##                 <!-- Random alphanumeric -->
+##random("token", 32)##                 <!-- URL-safe token -->
+
+<!-- Lorem ipsum -->
+##lorem()##                             <!-- 1 paragraph -->
+##lorem(3)##                            <!-- 3 paragraphs -->
+##lorem("words", 10)##                  <!-- 10 words -->
+##lorem("sentences", 5)##               <!-- 5 sentences -->
+
+<!-- Current time -->
+##now()##                               <!-- Unix timestamp -->
+##now("Y-m-d")##                        <!-- Formatted date -->
+##now("iso")##                          <!-- ISO 8601 -->
+
+<!-- Debug dump -->
+##dump(variable)##                      <!-- Styled debug output -->
+
+<!-- JSON encoding -->
+##json(data)##                          <!-- Compact JSON -->
+##json(data, true)##                    <!-- Pretty JSON -->
+
+<!-- Pluralization -->
+##pluralize(5, "item", "items")##       <!-- "5 items" -->
+##pluralize(1, "child", "children")##   <!-- "1 child" -->
+
+<!-- Money formatting -->
+##money(99.99, "USD")##                 <!-- $99.99 -->
+##money(50, "EUR")##                    <!-- €50,00 -->
+
+<!-- Data masking -->
+##mask("john@example.com", "email")##   <!-- j***@example.com -->
+##mask("4111111111111111", "card")##    <!-- **** **** **** 1111 -->
+##mask("555-123-4567", "phone")##       <!-- ***-***-4567 -->
+
+<!-- Initials extraction -->
+##initials("John Doe")##                <!-- JD -->
+##initials("John William Doe", 3)##     <!-- JWD -->
+
+<!-- Color manipulation -->
+##color("primary")##                    <!-- #4F46E5 (from palette) -->
+##color("random")##                     <!-- Random hex color -->
+##color("#FF0000", "lighten", 20)##     <!-- Lighten by 20% -->
+##color("#FF0000", "darken", 20)##      <!-- Darken by 20% -->
+##color("#FF0000", "alpha", 0.5)##      <!-- rgba(255, 0, 0, 0.5) -->
+##color("#FF0000", "rgb")##             <!-- rgb(255, 0, 0) -->
+##color("#FF0000", "hsl")##             <!-- hsl(0, 100%, 50%) -->
+
+<!-- Relative time -->
+##timeago(timestamp)##                  <!-- "5 minutes ago" -->
+##timeago(date, "short")##              <!-- "5m ago" -->
+
+<!-- Countdown -->
+##countdown("2025-12-31")##             <!-- "28 days, 5 hours" -->
+##countdown("2025-12-31", "full")##     <!-- "28d 5h 30m 15s" -->
+##countdown("2025-12-31", "days")##     <!-- "28 days" -->
+```
+
+#### Security Macros
+```html
+<!-- CSRF protection -->
+##csrf()##                              <!-- Hidden input field -->
+##csrf("token")##                       <!-- Token value only -->
+##csrf("meta")##                        <!-- Meta tag -->
+
+<!-- CSP nonce -->
+##nonce()##                             <!-- Nonce value -->
+##nonce("script")##                     <!-- nonce="..." attribute -->
+
+<!-- Honeypot spam protection -->
+##honeypot()##                          <!-- Hidden honeypot field -->
+##honeypot("website")##                 <!-- Custom field name -->
+```
+
+#### Form Macros
+```html
+<!-- Input elements -->
+##input("email", "email")##
+##input("username", "text", "John")##
+##input("age", "number", "", "min=0 max=120")##
+
+<!-- Textarea -->
+##textarea("message")##
+##textarea("bio", "Default text", 5, 40)##
+
+<!-- Select dropdown -->
+##select("country", countries)##
+##select("country", countries, "FR", "Choose...")##
+
+<!-- Checkboxes & Radio -->
+##checkbox("agree", "1", false, "I agree")##
+##radio("gender", "male", false, "Male")##
+
+<!-- Other form elements -->
+##label("email", "Email Address")##
+##hidden("user_id", "123")##
+##method("PUT")##                       <!-- Method spoofing -->
+```
+
+#### HTML/Meta Macros
+```html
+<!-- Script & Style -->
+##script("/js/app.js")##
+##script("/js/app.js", "defer")##
+##style("/css/app.css")##
+##style("/css/app.css", "preload")##
+
+<!-- Meta tags -->
+##meta("description", "Page description")##
+##meta("robots", "noindex")##
+
+<!-- Open Graph -->
+##og("title", "Page Title")##
+##og("image", "https://example.com/img.jpg")##
+
+<!-- Twitter Cards -->
+##twitter("card", "summary_large_image")##
+##twitter("title", "Page Title")##
+
+<!-- SEO -->
+##canonical("https://example.com/page")##
+##favicon("/favicon.ico")##
+##favicon("/favicon.ico", "full")##     <!-- Full favicon set -->
+
+<!-- Schema.org JSON-LD -->
+##schema("Organization", data)##
+##schema("Article", articleData)##
+
+<!-- Breadcrumbs -->
+##breadcrumbs(items)##                  <!-- With Schema.org markup -->
+
+<!-- Icons (multiple libraries) -->
+##icon("user")##                        <!-- Heroicons outline -->
+##icon("home", "solid")##               <!-- Heroicons solid -->
+##icon("fa-home", "fa")##               <!-- Font Awesome -->
+##icon("mdi-account", "mdi")##          <!-- Material Design -->
+##icon("bi-person", "bi")##             <!-- Bootstrap Icons -->
+##icon("user", "lucide")##              <!-- Lucide -->
+```
+
+#### Image/Media Macros
+```html
+<!-- Gravatar -->
+##gravatar("email@example.com")##
+##gravatar("email@example.com", 200)##
+##gravatar("email@example.com", 100, "identicon")##
+
+<!-- UI Avatars -->
+##avatar("John Doe")##
+##avatar("John Doe", 100, "4F46E5", "FFFFFF")##
+
+<!-- Placeholder images -->
+##placeholder(800, 600)##
+##placeholder(400, 300, "Product Image")##
+
+<!-- QR Codes -->
+##qrcode("https://example.com")##
+##qrcode("https://example.com", 200)##
+```
+
+#### Embed Macros
+```html
+<!-- YouTube -->
+##youtube("dQw4w9WgXcQ")##
+##youtube("dQw4w9WgXcQ", 560, 315)##
+##youtube("dQw4w9WgXcQ", 560, 315, true)##  <!-- Autoplay -->
+
+<!-- Vimeo -->
+##vimeo("123456789")##
+##vimeo("123456789", 640, 360)##
+```
+
+#### Social Share Macros
+```html
+<!-- Social sharing URLs -->
+##share("twitter", "https://example.com", "Check this out!")##
+##share("facebook", "https://example.com")##
+##share("linkedin", "https://example.com", "Title")##
+##share("email", "https://example.com", "Subject", "Body")##
+##share("whatsapp", "https://example.com", "Message")##
+##share("telegram", "https://example.com")##
+##share("reddit", "https://example.com", "Title")##
+##share("pinterest", "https://example.com", "Description", "image_url")##
 ```
 
 ## Architecture
@@ -261,6 +590,7 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 | `TemplateCompiler` | Compiles template syntax to PHP code |
 | `TemplateRenderer` | Renders templates with variable injection |
 | `InheritanceResolver` | Handles multi-level template inheritance |
+| `FilterRegistry` | Centralized filter management with 50+ built-in filters |
 | `FilesystemCache` | File-based template cache |
 | `CacheWarmer` | Precompiles templates for production |
 | `MacroRegistry` | Centralized macro management |
@@ -334,6 +664,39 @@ $registry
 if ($registry->has('greet')) {
     $result = $registry->call('greet', ['World']);
 }
+```
+
+### Custom Filters
+
+```php
+<?php
+use Lunar\Template\Filter\FilterInterface;
+
+class HighlightFilter implements FilterInterface
+{
+    public function getName(): string
+    {
+        return 'highlight';
+    }
+
+    public function apply(mixed $value, array $args = []): string
+    {
+        $term = $args[0] ?? '';
+        return str_replace($term, "<mark>$term</mark>", (string) $value);
+    }
+}
+
+// Register with renderer
+$renderer->registerFilterInstance(new HighlightFilter());
+
+// Or register a simple callable
+$renderer->registerFilter('double', fn($value) => $value * 2);
+```
+
+**Use in template:**
+```html
+<p>[[ text | highlight("search term") ]]</p>
+<p>Total: [[ count | double ]]</p>
 ```
 
 ### Custom Directives
@@ -436,6 +799,40 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Changelog
+
+### v1.4.0
+- **Raw Output Syntax**: `[[! content !]]` for unescaped output
+- **40+ New Macros**:
+  - Utility: `uuid`, `random`, `lorem`, `now`, `dump`, `json`, `pluralize`, `money`, `mask`, `initials`, `color`, `timeago`, `countdown`
+  - Security: `csrf`, `nonce`, `honeypot`
+  - Form: `input`, `textarea`, `select`, `checkbox`, `radio`, `label`, `hidden`, `method`
+  - HTML/Meta: `script`, `style`, `meta`, `og`, `twitter`, `canonical`, `favicon`, `schema`, `breadcrumbs`, `icon`
+  - Image/Media: `gravatar`, `avatar`, `placeholder`, `qrcode`
+  - Embed: `youtube`, `vimeo`
+  - Social: `share` (twitter, facebook, linkedin, email, whatsapp, telegram, reddit, pinterest)
+- **DefaultMacros**: Register all built-in macros at once
+
+### v1.3.0
+- **HTML Formatting Filters**: 12 filters for HTML generation
+- `markdown`, `linkify`, `list`, `table`, `attributes`, `wrap`
+- `highlight`, `paragraph`, `heading`, `anchor`, `excerpt_html`, `class_list`
+- **HTML Element Filters**: 18 new filters for HTML elements
+- Text: `div`, `span`, `strong`, `em`, `small`, `code`, `pre`, `blockquote`, `abbr`
+- Media: `img`, `video`, `audio`, `iframe`
+- UI: `time`, `progress`, `meter`, `badge`, `button`
+- **Aliases**: `p` (paragraph), `h` (heading), `a` (anchor)
+
+### v1.2.0
+- **Filter System**: 50+ built-in filters with pipe syntax `[[ var | filter ]]`
+- String filters: `upper`, `lower`, `capitalize`, `title`, `trim`, `slug`, `truncate`, `excerpt`, `replace`, `split`
+- Number filters: `number_format`, `round`, `floor`, `ceil`, `abs`, `currency`, `percent`, `ordinal`, `filesize`
+- Array filters: `first`, `last`, `length`, `keys`, `values`, `sort`, `slice`, `merge`, `unique`, `join`, `chunk`, `pluck`, `filter`, `map`, `group_by`, `random`, `shuffle`
+- Date filters: `date`, `ago`, `relative`
+- Encoding filters: `base64_encode`, `base64_decode`, `url_encode`, `url_decode`, `json_encode`, `json_decode`, `md5`, `sha1`, `sha256`
+- HTML filters: `raw`, `escape`, `striptags`, `nl2br`, `spaceless`
+- Filter chaining support: `[[ text | trim | upper | slug ]]`
+- Custom filter registration via `FilterInterface`
+- `FilterRegistry` for centralized filter management
 
 ### v1.1.0
 - Modular architecture (Parser, Compiler, Renderer)

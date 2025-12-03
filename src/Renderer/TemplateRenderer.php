@@ -8,6 +8,9 @@ use Lunar\Template\Compiler\CompilerInterface;
 use Lunar\Template\Compiler\TemplateCompiler;
 use Lunar\Template\Exception\TemplateException;
 use Lunar\Template\Exception\TemplateNotFoundException;
+use Lunar\Template\Filter\DefaultFilters;
+use Lunar\Template\Filter\FilterInterface;
+use Lunar\Template\Filter\FilterRegistry;
 use Lunar\Template\Macro\MacroInterface;
 use Lunar\Template\Security\PathValidator;
 use Throwable;
@@ -23,6 +26,8 @@ class TemplateRenderer implements RendererInterface
 
     private string $cachePath;
 
+    private FilterRegistry $filterRegistry;
+
     /** @var array<string, callable> */
     private array $macros = [];
 
@@ -33,15 +38,18 @@ class TemplateRenderer implements RendererInterface
      * @param string $templatePath Path to templates directory
      * @param string $cachePath Path to cache directory
      * @param CompilerInterface|null $compiler Template compiler
+     * @param FilterRegistry|null $filterRegistry Filter registry
      */
     public function __construct(
         string $templatePath,
         string $cachePath,
         ?CompilerInterface $compiler = null,
+        ?FilterRegistry $filterRegistry = null,
     ) {
         $this->pathValidator = new PathValidator($templatePath);
         $this->cachePath = $this->normalizePath($cachePath);
         $this->compiler = $compiler ?? new TemplateCompiler();
+        $this->filterRegistry = $filterRegistry ?? DefaultFilters::create();
 
         $this->ensureCacheDirectoryExists();
     }
@@ -117,6 +125,46 @@ class TemplateRenderer implements RendererInterface
     public function addDefaultVariables(array $variables): void
     {
         $this->defaultVariables = array_merge($this->defaultVariables, $variables);
+    }
+
+    /**
+     * Register a filter.
+     *
+     * @param string $name Filter name
+     * @param callable $callback Filter callback
+     */
+    public function registerFilter(string $name, callable $callback): void
+    {
+        $this->filterRegistry->register($name, $callback);
+    }
+
+    /**
+     * Register a filter from an interface instance.
+     */
+    public function registerFilterInstance(FilterInterface $filter): void
+    {
+        $this->filterRegistry->registerInstance($filter);
+    }
+
+    /**
+     * Get the filter registry.
+     */
+    public function getFilterRegistry(): FilterRegistry
+    {
+        return $this->filterRegistry;
+    }
+
+    /**
+     * Apply a filter to a value.
+     *
+     * @param string $name Filter name
+     * @param mixed $value Value to filter
+     * @param array<int, mixed> $args Filter arguments
+     * @return mixed Filtered value
+     */
+    public function applyFilter(string $name, mixed $value, array $args = []): mixed
+    {
+        return $this->filterRegistry->apply($name, $value, $args);
     }
 
     /**

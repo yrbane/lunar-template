@@ -1,11 +1,17 @@
 {
-    "name": "lunar/template",
+    "name": "yrbane/lunar-template",
     "description": "Standalone advanced template engine with inheritance, blocks, macros and caching",
-    "version": "1.0.0",
+    "version": "1.4.0",
     "type": "library",
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../lunar-cli"
+        }
+    ],
     "keywords": ["template", "engine", "php", "templating", "inheritance", "blocks", "macros"],
-    "homepage": "https://github.com/lunar/template",
+    "homepage": "https://github.com/yrbane/lunar-template",
     "authors": [
         {
             "name": "Seb",
@@ -20,8 +26,12 @@
     },
     "require": {
         "php": ">=8.3",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "yrbane/lunar-cli": "@dev"
     },
+    "bin": [
+        "bin/lunar-template"
+    ],
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.91",
         "phpstan/phpstan": "^1.10",

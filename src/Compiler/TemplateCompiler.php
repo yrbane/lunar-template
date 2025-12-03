@@ -14,6 +14,9 @@ class TemplateCompiler implements CompilerInterface
      */
     public function compile(string $source): string
     {
+        // Process raw output [[! ... !]] (no escaping)
+        $source = $this->compileRawOutput($source);
+
         // Process variables [[ ... ]]
         $source = $this->compileVariables($source);
 
@@ -33,7 +36,46 @@ class TemplateCompiler implements CompilerInterface
     }
 
     /**
-     * Compile variable output [[ expression ]].
+     * Compile raw output [[! expression !]] without escaping.
+     * Syntax: [[! variable !]] or [[! variable | filter !]]
+     */
+    private function compileRawOutput(string $source): string
+    {
+        return (string) preg_replace_callback('/\[\[!\s*(.*?)\s*!\]\]/', function ($matches) {
+            $expression = trim($matches[1]);
+
+            if ($expression === '') {
+                return '';
+            }
+
+            // Check if there are filters
+            $filters = $this->parseFilters($expression);
+            $variable = $filters['variable'];
+            $filterChain = $filters['filters'];
+
+            $phpVar = $this->convertDotNotation($variable);
+
+            // Build the filter chain
+            if (empty($filterChain)) {
+                return '<?= ' . $phpVar . ' ?? \'\' ?>';
+            }
+
+            // Apply filters
+            $value = $phpVar . ' ?? \'\'';
+
+            foreach ($filterChain as $filter) {
+                $name = $filter['name'];
+                $args = $filter['args'];
+                $value = '$this->applyFilter(\'' . $name . '\', ' . $value . ', ' . $args . ')';
+            }
+
+            return '<?= ' . $value . ' ?>';
+        }, $source);
+    }
+
+    /**
+     * Compile variable output [[ expression ]] with optional filters.
+     * Syntax: [[ variable ]] or [[ variable | filter ]] or [[ variable | filter(arg1, arg2) | filter2 ]]
      */
     private function compileVariables(string $source): string
     {
@@ -44,10 +86,198 @@ class TemplateCompiler implements CompilerInterface
                 return '';
             }
 
-            $expression = $this->convertDotNotation($expression);
+            // Check if there are filters
+            $filters = $this->parseFilters($expression);
+            $variable = $filters['variable'];
+            $filterChain = $filters['filters'];
 
-            return '<?= htmlspecialchars((string)(' . $expression . ' ?? \'\'), ENT_QUOTES, \'UTF-8\') ?>';
+            $phpVar = $this->convertDotNotation($variable);
+
+            // Build the filter chain
+            if (empty($filterChain)) {
+                return '<?= htmlspecialchars((string)(' . $phpVar . ' ?? \'\'), ENT_QUOTES, \'UTF-8\') ?>';
+            }
+
+            // Apply filters
+            $value = $phpVar . ' ?? \'\'';
+
+            foreach ($filterChain as $filter) {
+                $name = $filter['name'];
+                $args = $filter['args'];
+
+                if ($name === 'raw') {
+                    // Raw filter - no escaping at all
+                    $value = '$this->applyFilter(\'' . $name . '\', ' . $value . ', ' . $args . ')';
+                } else {
+                    $value = '$this->applyFilter(\'' . $name . '\', ' . $value . ', ' . $args . ')';
+                }
+            }
+
+            // Check if last filter is 'raw' - if so, don't escape
+            $lastFilter = end($filterChain);
+            if ($lastFilter !== false && $lastFilter['name'] === 'raw') {
+                return '<?= ' . $value . ' ?>';
+            }
+
+            return '<?= htmlspecialchars((string)(' . $value . '), ENT_QUOTES, \'UTF-8\') ?>';
         }, $source);
+    }
+
+    /**
+     * Parse variable expression and extract filters.
+     *
+     * @return array{variable: string, filters: array<int, array{name: string, args: string}>}
+     */
+    private function parseFilters(string $expression): array
+    {
+        $parts = $this->splitFilterPipe($expression);
+
+        $variable = trim(array_shift($parts) ?? '');
+        $filters = [];
+
+        foreach ($parts as $filterExpr) {
+            $filterExpr = trim($filterExpr);
+
+            if ($filterExpr === '') {
+                continue;
+            }
+
+            // Parse filter name and arguments: filter or filter(arg1, arg2)
+            if (preg_match('/^(\w+)(?:\((.*)\))?$/', $filterExpr, $m)) {
+                $name = $m[1];
+                $args = isset($m[2]) ? $this->parseFilterArguments($m[2]) : '[]';
+                $filters[] = ['name' => $name, 'args' => $args];
+            }
+        }
+
+        return ['variable' => $variable, 'filters' => $filters];
+    }
+
+    /**
+     * Split expression by pipe character, respecting strings and parentheses.
+     *
+     * @return array<int, string>
+     */
+    private function splitFilterPipe(string $expression): array
+    {
+        $parts = [];
+        $current = '';
+        $inQuotes = false;
+        $quoteChar = '';
+        $parenDepth = 0;
+
+        for ($i = 0; $i < mb_strlen($expression); $i++) {
+            $char = $expression[$i];
+
+            if (!$inQuotes && ($char === '"' || $char === "'")) {
+                $inQuotes = true;
+                $quoteChar = $char;
+                $current .= $char;
+            } elseif ($inQuotes && $char === $quoteChar) {
+                $inQuotes = false;
+                $current .= $char;
+            } elseif (!$inQuotes && $char === '(') {
+                $parenDepth++;
+                $current .= $char;
+            } elseif (!$inQuotes && $char === ')') {
+                $parenDepth--;
+                $current .= $char;
+            } elseif (!$inQuotes && $parenDepth === 0 && $char === '|') {
+                $parts[] = $current;
+                $current = '';
+            } else {
+                $current .= $char;
+            }
+        }
+
+        if ($current !== '') {
+            $parts[] = $current;
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Parse filter arguments into PHP array syntax.
+     */
+    private function parseFilterArguments(string $args): string
+    {
+        if (trim($args) === '') {
+            return '[]';
+        }
+
+        $arguments = [];
+        $current = '';
+        $inQuotes = false;
+        $quoteChar = '';
+        $parenDepth = 0;
+        $bracketDepth = 0;
+
+        for ($i = 0; $i < mb_strlen($args); $i++) {
+            $char = $args[$i];
+
+            if (!$inQuotes && ($char === '"' || $char === "'")) {
+                $inQuotes = true;
+                $quoteChar = $char;
+                $current .= $char;
+            } elseif ($inQuotes && $char === $quoteChar) {
+                $inQuotes = false;
+                $current .= $char;
+            } elseif (!$inQuotes && $char === '(') {
+                $parenDepth++;
+                $current .= $char;
+            } elseif (!$inQuotes && $char === ')') {
+                $parenDepth--;
+                $current .= $char;
+            } elseif (!$inQuotes && ($char === '[' || $char === '{')) {
+                $bracketDepth++;
+                $current .= $char;
+            } elseif (!$inQuotes && ($char === ']' || $char === '}')) {
+                $bracketDepth--;
+                $current .= $char;
+            } elseif (!$inQuotes && $parenDepth === 0 && $bracketDepth === 0 && $char === ',') {
+                $arguments[] = $this->convertFilterArgument(trim($current));
+                $current = '';
+            } else {
+                $current .= $char;
+            }
+        }
+
+        if (trim($current) !== '') {
+            $arguments[] = $this->convertFilterArgument(trim($current));
+        }
+
+        return '[' . implode(', ', $arguments) . ']';
+    }
+
+    /**
+     * Convert filter argument to PHP expression.
+     */
+    private function convertFilterArgument(string $arg): string
+    {
+        // String
+        if (preg_match('/^(["\']).*\1$/', $arg)) {
+            return $arg;
+        }
+
+        // Number
+        if (is_numeric($arg)) {
+            return $arg;
+        }
+
+        // Boolean or null
+        $phpKeywords = ['true', 'false', 'null'];
+        if (\in_array(strtolower($arg), $phpKeywords, true)) {
+            return strtolower($arg);
+        }
+
+        // Array literal
+        if (str_starts_with($arg, '[')) {
+            return $arg;
+        }
+
+        // Variable
+        return $this->convertDotNotation($arg);
     }
 
     /**
