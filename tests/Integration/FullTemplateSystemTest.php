@@ -1,27 +1,30 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lunar\Template\Tests\Integration;
 
 use Lunar\Template\AdvancedTemplateEngine;
 use Lunar\Template\Macro\AssetMacro;
-use Lunar\Template\Macro\UrlMacro;
 use Lunar\Template\Macro\RouterInterface;
+use Lunar\Template\Macro\UrlMacro;
 use PHPUnit\Framework\TestCase;
 
 class FullTemplateSystemTest extends TestCase
 {
     private string $templatesDir;
+
     private string $cacheDir;
+
     private AdvancedTemplateEngine $engine;
 
     protected function setUp(): void
     {
         $this->templatesDir = sys_get_temp_dir() . '/lunar-integration-templates-' . uniqid();
         $this->cacheDir = sys_get_temp_dir() . '/lunar-integration-cache-' . uniqid();
-        
-        mkdir($this->templatesDir, 0755, true);
-        
+
+        mkdir($this->templatesDir, 0o755, true);
+
         $this->engine = new AdvancedTemplateEngine($this->templatesDir, $this->cacheDir);
         $this->setupMacros();
         $this->createTemplates();
@@ -40,8 +43,9 @@ class FullTemplateSystemTest extends TestCase
         if (!is_dir($dir)) {
             return;
         }
-        
-        $files = array_diff(scandir($dir), ['.', '..']);
+
+        $scanResult = scandir($dir);
+        $files = $scanResult !== false ? array_diff($scanResult, ['.', '..']) : [];
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
             is_dir($path) ? $this->removeDirectory($path) : unlink($path);
@@ -53,27 +57,29 @@ class FullTemplateSystemTest extends TestCase
     {
         // Asset macro
         $this->engine->registerMacroInstance(new AssetMacro('/assets'));
-        
+
         // URL macro with mock router
-        $router = new class implements RouterInterface {
+        $router = new class () implements RouterInterface {
+            /** @var array<string, array{path: string, params?: array<string, string>}> */
             private array $routes = [
                 'home' => ['path' => '/'],
                 'blog.index' => ['path' => '/blog'],
                 'blog.show' => ['path' => '/blog/post'],
-                'user.profile' => ['path' => '/user/profile']
+                'user.profile' => ['path' => '/user/profile'],
             ];
-            
+
+            /** @return array{path: string, params?: array<string, string>}|null */
             public function getRouteByName(string $name): ?array
             {
                 return $this->routes[$name] ?? null;
             }
         };
-        
+
         $this->engine->registerMacroInstance(new UrlMacro($router));
-        
+
         // Custom macro
-        $this->engine->registerMacro('format_date', function($timestamp, $format = 'Y-m-d') {
-            return date($format, is_string($timestamp) ? strtotime($timestamp) : $timestamp);
+        $this->engine->registerMacro('format_date', function ($timestamp, $format = 'Y-m-d') {
+            return date($format, \is_string($timestamp) ? strtotime($timestamp) : $timestamp);
         });
     }
 
@@ -81,170 +87,170 @@ class FullTemplateSystemTest extends TestCase
     {
         // Base layout
         $baseTemplate = <<<'TPL'
-<!DOCTYPE html>
-<html lang="[[ lang ]]">
-<head>
-    <meta charset="[[ charset ]]">
-    <meta name="viewport" content="[[ viewport ]]">
-    <title>[% block title %]Default Title[% endblock %] - My Website</title>
-    <link rel="stylesheet" href="##asset('css/main.css')##">
-    [% block head %][% endblock %]
-</head>
-<body>
-    <nav class="navbar">
-        <a href="##url('home')##">Home</a>
-        <a href="##url('blog.index')##">Blog</a>
-        [% if user %]
-            <a href="##url('user.profile')##">Profile</a>
-        [% else %]
-            <a href="/login">Login</a>
-        [% endif %]
-    </nav>
-    
-    <main>
-        [% block content %]
-            <p>Default content</p>
-        [% endblock %]
-    </main>
-    
-    <footer>
-        <p>&copy; 2024 My Website. All rights reserved.</p>
-        [% block footer %][% endblock %]
-    </footer>
-    
-    <script src="##asset('js/main.js')##"></script>
-    [% block scripts %][% endblock %]
-</body>
-</html>
-TPL;
+            <!DOCTYPE html>
+            <html lang="[[ lang ]]">
+            <head>
+                <meta charset="[[ charset ]]">
+                <meta name="viewport" content="[[ viewport ]]">
+                <title>[% block title %]Default Title[% endblock %] - My Website</title>
+                <link rel="stylesheet" href="##asset('css/main.css')##">
+                [% block head %][% endblock %]
+            </head>
+            <body>
+                <nav class="navbar">
+                    <a href="##url('home')##">Home</a>
+                    <a href="##url('blog.index')##">Blog</a>
+                    [% if user %]
+                        <a href="##url('user.profile')##">Profile</a>
+                    [% else %]
+                        <a href="/login">Login</a>
+                    [% endif %]
+                </nav>
+                
+                <main>
+                    [% block content %]
+                        <p>Default content</p>
+                    [% endblock %]
+                </main>
+                
+                <footer>
+                    <p>&copy; 2024 My Website. All rights reserved.</p>
+                    [% block footer %][% endblock %]
+                </footer>
+                
+                <script src="##asset('js/main.js')##"></script>
+                [% block scripts %][% endblock %]
+            </body>
+            </html>
+            TPL;
         file_put_contents($this->templatesDir . '/base.tpl', $baseTemplate);
 
         // Blog listing template
         $blogTemplate = <<<'TPL'
-[% extends 'base.tpl' %]
+            [% extends 'base.tpl' %]
 
-[% block title %]Blog Posts[% endblock %]
+            [% block title %]Blog Posts[% endblock %]
 
-[% block head %]
-<meta name="description" content="Latest blog posts">
-<link rel="stylesheet" href="##asset('css/blog.css')##">
-[% endblock %]
+            [% block head %]
+            <meta name="description" content="Latest blog posts">
+            <link rel="stylesheet" href="##asset('css/blog.css')##">
+            [% endblock %]
 
-[% block content %]
-<h1>Latest Blog Posts</h1>
+            [% block content %]
+            <h1>Latest Blog Posts</h1>
 
-[% if posts %]
-    <div class="posts-grid">
-    [% for post in posts %]
-        <article class="post-card">
-            [% if post.featured_image %]
-                <img src="##asset(post.featured_image)##" alt="[[ post.title ]]" class="post-image">
-            [% endif %]
-            
-            <div class="post-content">
-                <h2>
-                    <a href="##url('blog.show')##?id=[[ post.id ]]">[[ post.title ]]</a>
-                </h2>
-                
-                <div class="post-meta">
-                    <span class="author">By [[ post.author.name ]]</span>
-                    <span class="date">##format_date(post.published_at, 'F j, Y')##</span>
-                    [% if post.category %]
-                        <span class="category">[[ post.category ]]</span>
-                    [% endif %]
+            [% if posts %]
+                <div class="posts-grid">
+                [% for post in posts %]
+                    <article class="post-card">
+                        [% if post.featured_image %]
+                            <img src="##asset(post.featured_image)##" alt="[[ post.title ]]" class="post-image">
+                        [% endif %]
+                        
+                        <div class="post-content">
+                            <h2>
+                                <a href="##url('blog.show')##?id=[[ post.id ]]">[[ post.title ]]</a>
+                            </h2>
+                            
+                            <div class="post-meta">
+                                <span class="author">By [[ post.author.name ]]</span>
+                                <span class="date">##format_date(post.published_at, 'F j, Y')##</span>
+                                [% if post.category %]
+                                    <span class="category">[[ post.category ]]</span>
+                                [% endif %]
+                            </div>
+                            
+                            <p class="excerpt">[[ post.excerpt ]]</p>
+                            
+                            [% if post.tags %]
+                                <div class="tags">
+                                [% for tag in post.tags %]
+                                    <span class="tag">[[ tag ]]</span>
+                                [% endfor %]
+                                </div>
+                            [% endif %]
+                            
+                            <a href="##url('blog.show')##?id=[[ post.id ]]" class="read-more">Read More</a>
+                        </div>
+                    </article>
+                [% endfor %]
                 </div>
                 
-                <p class="excerpt">[[ post.excerpt ]]</p>
-                
-                [% if post.tags %]
-                    <div class="tags">
-                    [% for tag in post.tags %]
-                        <span class="tag">[[ tag ]]</span>
-                    [% endfor %]
+                [% if pagination.has_more %]
+                    <div class="pagination">
+                        [% if pagination.prev_page %]
+                            <a href="?page=[[ pagination.prev_page ]]" class="prev">Previous</a>
+                        [% endif %]
+                        
+                        <span class="current">Page [[ pagination.current_page ]] of [[ pagination.total_pages ]]</span>
+                        
+                        [% if pagination.next_page %]
+                            <a href="?page=[[ pagination.next_page ]]" class="next">Next</a>
+                        [% endif %]
                     </div>
                 [% endif %]
-                
-                <a href="##url('blog.show')##?id=[[ post.id ]]" class="read-more">Read More</a>
-            </div>
-        </article>
-    [% endfor %]
-    </div>
-    
-    [% if pagination.has_more %]
-        <div class="pagination">
-            [% if pagination.prev_page %]
-                <a href="?page=[[ pagination.prev_page ]]" class="prev">Previous</a>
+            [% else %]
+                <div class="no-posts">
+                    <h2>No posts yet</h2>
+                    <p>Check back later for new content!</p>
+                </div>
             [% endif %]
-            
-            <span class="current">Page [[ pagination.current_page ]] of [[ pagination.total_pages ]]</span>
-            
-            [% if pagination.next_page %]
-                <a href="?page=[[ pagination.next_page ]]" class="next">Next</a>
-            [% endif %]
-        </div>
-    [% endif %]
-[% else %]
-    <div class="no-posts">
-        <h2>No posts yet</h2>
-        <p>Check back later for new content!</p>
-    </div>
-[% endif %]
-[% endblock %]
+            [% endblock %]
 
-[% block scripts %]
-<script src="##asset('js/blog.js')##"></script>
-[% endblock %]
-TPL;
+            [% block scripts %]
+            <script src="##asset('js/blog.js')##"></script>
+            [% endblock %]
+            TPL;
         file_put_contents($this->templatesDir . '/blog.tpl', $blogTemplate);
 
         // User dashboard template
         $dashboardTemplate = <<<'TPL'
-[% extends 'base.tpl' %]
+            [% extends 'base.tpl' %]
 
-[% block title %]Dashboard - [[ user.name ]][% endblock %]
+            [% block title %]Dashboard - [[ user.name ]][% endblock %]
 
-[% block content %]
-<div class="dashboard">
-    <header class="dashboard-header">
-        <h1>Welcome back, [[ user.name ]]!</h1>
-        [% if user.avatar %]
-            <img src="##asset(user.avatar)##" alt="Avatar" class="avatar">
-        [% endif %]
-    </header>
-    
-    <div class="dashboard-stats">
-        [% for stat in stats %]
-            <div class="stat-card [[ stat.type ]]">
-                <h3>[[ stat.label ]]</h3>
-                <div class="value">[[ stat.value ]]</div>
-                [% if stat.change %]
-                    <div class="change [% if stat.change > 0 %]positive[% else %]negative[% endif %]">
-                        [[ stat.change ]]%
-                    </div>
+            [% block content %]
+            <div class="dashboard">
+                <header class="dashboard-header">
+                    <h1>Welcome back, [[ user.name ]]!</h1>
+                    [% if user.avatar %]
+                        <img src="##asset(user.avatar)##" alt="Avatar" class="avatar">
+                    [% endif %]
+                </header>
+                
+                <div class="dashboard-stats">
+                    [% for stat in stats %]
+                        <div class="stat-card [[ stat.type ]]">
+                            <h3>[[ stat.label ]]</h3>
+                            <div class="value">[[ stat.value ]]</div>
+                            [% if stat.change %]
+                                <div class="change [% if stat.change > 0 %]positive[% else %]negative[% endif %]">
+                                    [[ stat.change ]]%
+                                </div>
+                            [% endif %]
+                        </div>
+                    [% endfor %]
+                </div>
+                
+                [% if recent_activities %]
+                    <section class="recent-activities">
+                        <h2>Recent Activities</h2>
+                        <ul class="activity-list">
+                        [% for activity in recent_activities %]
+                            <li class="activity-item [[ activity.type ]]">
+                                <div class="activity-content">
+                                    <strong>[[ activity.title ]]</strong>
+                                    <p>[[ activity.description ]]</p>
+                                </div>
+                                <time class="activity-time">##format_date(activity.created_at, 'M j, g:i A')##</time>
+                            </li>
+                        [% endfor %]
+                        </ul>
+                    </section>
                 [% endif %]
             </div>
-        [% endfor %]
-    </div>
-    
-    [% if recent_activities %]
-        <section class="recent-activities">
-            <h2>Recent Activities</h2>
-            <ul class="activity-list">
-            [% for activity in recent_activities %]
-                <li class="activity-item [[ activity.type ]]">
-                    <div class="activity-content">
-                        <strong>[[ activity.title ]]</strong>
-                        <p>[[ activity.description ]]</p>
-                    </div>
-                    <time class="activity-time">##format_date(activity.created_at, 'M j, g:i A')##</time>
-                </li>
-            [% endfor %]
-            </ul>
-        </section>
-    [% endif %]
-</div>
-[% endblock %]
-TPL;
+            [% endblock %]
+            TPL;
         file_put_contents($this->templatesDir . '/dashboard.tpl', $dashboardTemplate);
     }
 
@@ -264,7 +270,7 @@ TPL;
                     'published_at' => '2024-03-15',
                     'category' => 'PHP',
                     'tags' => ['PHP', 'Tutorial', 'Beginner'],
-                    'featured_image' => 'images/php83.jpg'
+                    'featured_image' => 'images/php83.jpg',
                 ],
                 [
                     'id' => 2,
@@ -274,16 +280,16 @@ TPL;
                     'published_at' => '2024-03-10',
                     'category' => 'Templates',
                     'tags' => ['Templates', 'Advanced'],
-                    'featured_image' => null
-                ]
+                    'featured_image' => null,
+                ],
             ],
             'pagination' => [
                 'current_page' => 1,
                 'total_pages' => 3,
                 'has_more' => true,
                 'next_page' => 2,
-                'prev_page' => null
-            ]
+                'prev_page' => null,
+            ],
         ];
 
         $result = $this->engine->render('blog', $data);
@@ -336,42 +342,42 @@ TPL;
         $data = [
             'user' => [
                 'name' => 'Alice Johnson',
-                'avatar' => 'images/avatars/alice.jpg'
+                'avatar' => 'images/avatars/alice.jpg',
             ],
             'stats' => [
                 [
                     'type' => 'posts',
                     'label' => 'Total Posts',
                     'value' => 42,
-                    'change' => 12
+                    'change' => 12,
                 ],
                 [
                     'type' => 'views',
                     'label' => 'Page Views',
                     'value' => '1.2K',
-                    'change' => -5
+                    'change' => -5,
                 ],
                 [
                     'type' => 'comments',
                     'label' => 'Comments',
                     'value' => 89,
-                    'change' => 0
-                ]
+                    'change' => 0,
+                ],
             ],
             'recent_activities' => [
                 [
                     'type' => 'post',
                     'title' => 'New Post Published',
                     'description' => 'Published "Advanced PHP Patterns"',
-                    'created_at' => time() - 3600 // 1 hour ago
+                    'created_at' => time() - 3600, // 1 hour ago
                 ],
                 [
                     'type' => 'comment',
                     'title' => 'New Comment',
                     'description' => 'Someone commented on your post',
-                    'created_at' => time() - 7200 // 2 hours ago
-                ]
-            ]
+                    'created_at' => time() - 7200, // 2 hours ago
+                ],
+            ],
         ];
 
         $result = $this->engine->render('dashboard', $data);
@@ -434,8 +440,8 @@ TPL;
         $this->assertLessThan($firstRenderTime, $secondRenderTime);
 
         // Verify cache files exist
-        $cacheFiles = glob($this->cacheDir . '/*.php');
-        $this->assertGreaterThan(0, count($cacheFiles));
+        $cacheFiles = glob($this->cacheDir . '/*.php') ?: [];
+        $this->assertGreaterThan(0, \count($cacheFiles));
     }
 
     public function testComplexDataStructures(): void
@@ -447,26 +453,26 @@ TPL;
                     'theme' => 'dark',
                     'notifications' => [
                         'email' => true,
-                        'push' => false
-                    ]
-                ]
+                        'push' => false,
+                    ],
+                ],
             ],
             'nested' => [
                 'level1' => [
                     'level2' => [
-                        'level3' => 'Deep Value'
-                    ]
-                ]
-            ]
+                        'level3' => 'Deep Value',
+                    ],
+                ],
+            ],
         ];
 
         // Create a template that uses complex data
         $complexTemplate = <<<'TPL'
-User: [[ user.name ]]
-Theme: [[ user.preferences.theme ]]
-Email: [% if user.preferences.notifications.email %]Enabled[% else %]Disabled[% endif %]
-Deep: [[ nested.level1.level2.level3 ]]
-TPL;
+            User: [[ user.name ]]
+            Theme: [[ user.preferences.theme ]]
+            Email: [% if user.preferences.notifications.email %]Enabled[% else %]Disabled[% endif %]
+            Deep: [[ nested.level1.level2.level3 ]]
+            TPL;
         file_put_contents($this->templatesDir . '/complex.tpl', $complexTemplate);
 
         $result = $this->engine->render('complex', $complexData);
