@@ -8,6 +8,7 @@ use FilesystemIterator;
 use Lunar\Cli\AbstractCommand;
 use Lunar\Cli\Attribute\Command;
 use Lunar\Cli\Helper\ConsoleHelper as C;
+use Lunar\Template\Config;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -25,8 +26,8 @@ final class ListCommand extends AbstractCommand
         }
 
         $namedArgs = $this->parseNamedArgs($args);
-        $templatePath = $this->getOptionValue($namedArgs, 'templates', getcwd() . '/templates');
-        $extension = $this->getOptionValue($namedArgs, 'ext', 'tpl');
+        $templatePath = $this->getOptionValue($namedArgs, 'templates', Config::getTemplatePath());
+        $extension = $this->getOptionValue($namedArgs, 'ext', Config::getExtension());
         $showTree = $this->hasFlag($namedArgs, 'tree');
 
         if (!is_dir($templatePath)) {

@@ -8,6 +8,7 @@ use FilesystemIterator;
 use Lunar\Cli\AbstractCommand;
 use Lunar\Cli\Attribute\Command;
 use Lunar\Cli\Helper\ConsoleHelper as C;
+use Lunar\Template\Config;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -25,7 +26,7 @@ final class ClearCommand extends AbstractCommand
         }
 
         $namedArgs = $this->parseNamedArgs($args);
-        $cachePath = $this->getOptionValue($namedArgs, 'cache', getcwd() . '/cache');
+        $cachePath = $this->getOptionValue($namedArgs, 'cache', Config::getCachePath());
         $force = $this->hasFlag($namedArgs, 'force');
 
         if (!is_dir($cachePath)) {

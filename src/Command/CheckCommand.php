@@ -9,6 +9,7 @@ use Lunar\Cli\AbstractCommand;
 use Lunar\Cli\Attribute\Command;
 use Lunar\Cli\Helper\ConsoleHelper as C;
 use Lunar\Template\AdvancedTemplateEngine;
+use Lunar\Template\Config;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -26,9 +27,9 @@ final class CheckCommand extends AbstractCommand
         }
 
         $namedArgs = $this->parseNamedArgs($args);
-        $templatePath = $this->getOptionValue($namedArgs, 'templates', getcwd() . '/templates');
-        $cachePath = $this->getOptionValue($namedArgs, 'cache', sys_get_temp_dir() . '/lunar-template-check');
-        $extension = $this->getOptionValue($namedArgs, 'ext', 'tpl');
+        $templatePath = $this->getOptionValue($namedArgs, 'templates', Config::getTemplatePath());
+        $cachePath = $this->getOptionValue($namedArgs, 'cache', Config::getCachePath());
+        $extension = $this->getOptionValue($namedArgs, 'ext', Config::getExtension());
         $template = $this->getFirstPositionalArgument($args);
 
         if (!is_dir($templatePath)) {

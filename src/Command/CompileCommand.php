@@ -8,6 +8,7 @@ use Lunar\Cli\AbstractCommand;
 use Lunar\Cli\Attribute\Command;
 use Lunar\Cli\Helper\ConsoleHelper as C;
 use Lunar\Template\AdvancedTemplateEngine;
+use Lunar\Template\Config;
 use Throwable;
 
 #[Command(name: 'template:compile', description: 'Compile a template without rendering')]
@@ -22,8 +23,8 @@ final class CompileCommand extends AbstractCommand
         }
 
         $namedArgs = $this->parseNamedArgs($args);
-        $templatePath = $this->getOptionValue($namedArgs, 'templates', getcwd() . '/templates');
-        $cachePath = $this->getOptionValue($namedArgs, 'cache', getcwd() . '/cache');
+        $templatePath = $this->getOptionValue($namedArgs, 'templates', Config::getTemplatePath());
+        $cachePath = $this->getOptionValue($namedArgs, 'cache', Config::getCachePath());
         $template = $this->getFirstPositionalArgument($args);
 
         if ($template === null) {

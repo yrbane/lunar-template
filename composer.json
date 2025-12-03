@@ -51,6 +51,8 @@
         "optimize-autoloader": true
     },
     "scripts": {
+        "post-install-cmd": "Lunar\\Template\\Installer::postInstall",
+        "post-update-cmd": "Lunar\\Template\\Installer::postUpdate",
         "test": "phpunit --testsuite=All",
         "test:unit": "phpunit --testsuite=Unit",
         "test:integration": "phpunit --testsuite=Integration",
