@@ -1,18 +1,20 @@
 <?php
+
 /**
- *
  * @since 0.0.1
  * @link https://nethttp.net
+ *
  * @Author seb@nethttp.net
- *
- *
  */
 declare(strict_types=1);
 
 namespace Lunar\Template;
 
-use Lunar\Template\Macro\MacroInterface;
+use Exception;
 use Lunar\Template\Exception\TemplateException;
+use Lunar\Template\Macro\MacroInterface;
+use ReflectionClass;
+use Throwable;
 
 /**
  * Class AdvancedTemplateEngine.
@@ -41,8 +43,8 @@ class AdvancedTemplateEngine
     /**
      * AdvancedTemplateEngine constructor.
      *
-     * @param string  $templatePath répertoire où se trouvent les templates source
-     * @param string  $cachePath répertoire où seront stockés les templates compilés
+     * @param string $templatePath répertoire où se trouvent les templates source
+     * @param string $cachePath répertoire où seront stockés les templates compilés
      */
     public function __construct(string $templatePath, string $cachePath)
     {
@@ -59,6 +61,7 @@ class AdvancedTemplateEngine
      * Normalise un chemin de fichier.
      *
      * @param string $path
+     *
      * @return string
      */
     private function normalizePath(string $path): string
@@ -72,14 +75,17 @@ class AdvancedTemplateEngine
      * @param string $path
      * @param string $description
      * @param bool $create
-     * @throws \Exception
+     *
+     * @throws Exception
      */
     private function ensureDirectoryExists(string $path, string $description, bool $create = false): void
     {
         if (!is_dir($path)) {
             if ($create) {
-                if (!mkdir($path, 0755, true) && !is_dir($path)) {
+                if (!mkdir($path, 0o755, true) && !is_dir($path)) {
+                    // @codeCoverageIgnoreStart
                     throw TemplateException::unableToCreateCacheDirectory($path);
+                    // @codeCoverageIgnoreEnd
                 }
             } else {
                 throw TemplateException::directoryNotFound($path);
@@ -98,48 +104,51 @@ class AdvancedTemplateEngine
     /**
      * Rendu d'un template avec injection de variables.
      *
-     * @param string               $template  Nom du template (sans extension, fichier attendu en .tpl)
+     * @param string $template Nom du template (sans extension, fichier attendu en .tpl)
      * @param array<string, mixed> $variables variables à injecter dans le template
      *
-     * @return string le contenu HTML généré
+     * @throws Exception si le template source n'existe pas
      *
-     * @throws \Exception si le template source n'existe pas
+     * @return string le contenu HTML généré
      */
     public function render(string $template, array $variables = []): string
     {
         // Construit le chemin complet du fichier template
-        $templateFile = $this->templatePath.'/'.$template.'.tpl';
+        $templateFile = $this->templatePath . '/' . $template . '.tpl';
         if (!file_exists($templateFile)) {
             throw TemplateException::templateNotFound($templateFile);
         }
 
-        $compiledFile = $this->cachePath.'/'.md5($templateFile).'.php';
+        $compiledFile = $this->cachePath . '/' . md5($templateFile) . '.php';
 
         // Si le template compilé n'existe pas ou est périmé, le recompiler.
         if (!file_exists($compiledFile) || filemtime($compiledFile) < filemtime($templateFile)) {
             $source = file_get_contents($templateFile);
             if ($source === false) {
+                // @codeCoverageIgnoreStart
                 throw TemplateException::unableToReadTemplate($templateFile);
+                // @codeCoverageIgnoreEnd
             }
             $compiled = $this->compileTemplate($source);
             file_put_contents($compiledFile, $compiled);
         }
 
+        // Merge avec les variables par defaut
+        $variables = array_merge($this->getDefaultVariables(), $variables);
+
         extract($variables, EXTR_OVERWRITE);
 
-        // Variables par défaut (optionnelles)
-        $this->setDefaultVariables();
-     
         // Variable pour accéder au moteur dans le contexte du template
         $engine = $this;
 
         ob_start();
-        try{
+
+        try {
             include $compiledFile;
 
-        }
-        catch (\Throwable $e) {
+        } catch (Throwable $e) {
             ob_end_clean();
+
             throw $e;
         }
 
@@ -149,7 +158,7 @@ class AdvancedTemplateEngine
     /**
      * Enregistre une macro réutilisable dans les templates.
      *
-     * @param string   $name     nom de la macro
+     * @param string $name nom de la macro
      * @param callable $callback fonction à appeler pour générer le contenu
      */
     public function registerMacro(string $name, callable $callback): void
@@ -173,20 +182,29 @@ class AdvancedTemplateEngine
     /**
      * Appelle une macro enregistrée.
      *
-     * @param string                  $name nom de la macro
-     * @param array<int, mixed>       $args arguments passés à la macro
+     * @param string $name nom de la macro
+     * @param array<int, mixed> $args arguments passés à la macro
+     *
+     * @throws Exception si la macro n'est pas définie
      *
      * @return mixed résultat renvoyé par la macro
-     *
-     * @throws \Exception si la macro n'est pas définie
      */
-    public function callMacro(string $name, array $args)
+    public function callMacro(string $name, array $args): mixed
     {
         if (!isset($this->macros[$name])) {
             throw TemplateException::macroNotFound($name);
         }
 
-        return $this->macros[$name](...$args);
+        $callback = $this->macros[$name];
+
+        // Si c'est un callable de type [object, 'execute'] (MacroInterface),
+        // on passe le tableau d'arguments directement
+        if (\is_array($callback) && isset($callback[0]) && $callback[0] instanceof MacroInterface) {
+            return $callback[0]->execute($args);
+        }
+
+        // Pour les closures, on spread les arguments
+        return $callback(...$args);
     }
 
     /**
@@ -204,28 +222,28 @@ class AdvancedTemplateEngine
         // Conversion des variables [[ ... ]] en affichage PHP sécurisé.
         $source = preg_replace_callback('/\[\[\s*(.*?)\s*\]\]/', function ($matches) {
             $expression = trim($matches[1]);
-            
+
             // Si l'expression est vide, retourner une chaîne vide
             if ('' === $expression) {
                 return '';
             }
-            
-            // Si la première lettre n'est pas '$', on l'ajoute
-            if ('$' !== $expression[0]) {
-                $expression = '$'.$expression;
-            }
 
-            return '<?= htmlspecialchars('.$expression.', ENT_QUOTES, \'UTF-8\') ?>';
+            // Convertit la notation point en acces tableau/objet PHP
+            $expression = $this->convertDotNotation($expression);
+
+            return '<?= htmlspecialchars((string)(' . $expression . ' ?? \'\'), ENT_QUOTES, \'UTF-8\') ?>';
         }, $source);
 
         // Traitement des conditions.
         $source = preg_replace_callback('/\[%\s*if\s+(.*?)\s*%\]/', function ($matches) {
-            $condition = $this->addDollarToVariables($matches[1]);
-            return '<?php if ('.$condition.'): ?>';
+            $condition = $this->processCondition($matches[1]);
+
+            return '<?php if (' . $condition . '): ?>';
         }, $source);
         $source = preg_replace_callback('/\[%\s*elseif\s+(.*?)\s*%\]/', function ($matches) {
-            $condition = $this->addDollarToVariables($matches[1]);
-            return '<?php elseif ('.$condition.'): ?>';
+            $condition = $this->processCondition($matches[1]);
+
+            return '<?php elseif (' . $condition . '): ?>';
         }, $source);
         $source = preg_replace('/\[%\s*else\s*%\]/', '<?php else: ?>', $source);
         $source = preg_replace('/\[%\s*endif\s*%\]/', '<?php endif; ?>', $source);
@@ -234,7 +252,8 @@ class AdvancedTemplateEngine
         $source = preg_replace_callback('/\[%\s*for\s+(\S+)\s+in\s+(\S+)\s*%\]/', function ($matches) {
             $variable = ltrim($matches[1], '$');
             $array = $this->addDollarToVariables($matches[2]);
-            return '<?php foreach('.$array.' as $'.$variable.'): ?>';
+
+            return '<?php foreach((' . $array . ' ?? []) as $' . $variable . '): ?>';
         }, $source);
         $source = preg_replace('/\[%\s*endfor\s*%\]/', '<?php endforeach; ?>', $source);
 
@@ -245,8 +264,8 @@ class AdvancedTemplateEngine
 
             // Parse les arguments pour créer un tableau PHP
             $parsedArgs = $this->parseMacroArguments($args);
-            
-            return '<?= $this->callMacro(\''.$macroName.'\', '.$parsedArgs.') ?>';
+
+            return '<?= $this->callMacro(\'' . $macroName . '\', ' . $parsedArgs . ') ?>';
         }, $source);
 
         // Nettoyage des éventuelles balises de blocs non remplacées
@@ -260,9 +279,9 @@ class AdvancedTemplateEngine
      *
      * @param string $source contenu du template enfant
      *
-     * @return string contenu final après fusion avec le template parent
+     * @throws Exception si le template parent n'existe pas
      *
-     * @throws \Exception si le template parent n'existe pas
+     * @return string contenu final après fusion avec le template parent
      */
     protected function processExtends(string $source): string
     {
@@ -276,7 +295,9 @@ class AdvancedTemplateEngine
             }
             $parentSource = file_get_contents($parentFile);
             if ($parentSource === false) {
+                // @codeCoverageIgnoreStart
                 throw TemplateException::unableToReadTemplate($parentFile);
+                // @codeCoverageIgnoreEnd
             }
 
             return preg_replace_callback('/\[%\s*block\s+(\w+)\s*%\](.*?)\[%\s*endblock\s*%\]/s', function ($matches) use ($blocks) {
@@ -312,6 +333,7 @@ class AdvancedTemplateEngine
      * Parse les arguments d'une macro en tableau PHP.
      *
      * @param string $args Arguments de la macro
+     *
      * @return string Code PHP pour le tableau d'arguments
      */
     protected function parseMacroArguments(string $args): string
@@ -325,10 +347,10 @@ class AdvancedTemplateEngine
         $current = '';
         $inQuotes = false;
         $quoteChar = '';
-        
-        for ($i = 0; $i < strlen($args); $i++) {
+
+        for ($i = 0; $i < \strlen($args); $i++) {
             $char = $args[$i];
-            
+
             if (!$inQuotes && ($char === '"' || $char === "'")) {
                 $inQuotes = true;
                 $quoteChar = $char;
@@ -337,65 +359,192 @@ class AdvancedTemplateEngine
                 $inQuotes = false;
                 $current .= $char;
             } elseif (!$inQuotes && $char === ',') {
-                $arguments[] = trim($current);
+                $arguments[] = $this->convertMacroArgument(trim($current));
                 $current = '';
             } else {
                 $current .= $char;
             }
         }
-        
+
         if (!empty(trim($current))) {
-            $arguments[] = trim($current);
+            $arguments[] = $this->convertMacroArgument(trim($current));
         }
 
         return '[' . implode(', ', $arguments) . ']';
     }
 
     /**
+     * Convertit un argument de macro en expression PHP valide.
+     *
+     * @param string $arg Argument de macro
+     *
+     * @return string Expression PHP
+     */
+    protected function convertMacroArgument(string $arg): string
+    {
+        // Si c'est une chaine entre guillemets, la garder telle quelle
+        if (preg_match('/^(["\']).*\1$/', $arg)) {
+            return $arg;
+        }
+
+        // Si c'est un nombre, le garder tel quel
+        if (is_numeric($arg)) {
+            return $arg;
+        }
+
+        // Si c'est un mot-cle PHP, le garder tel quel
+        $phpKeywords = ['true', 'false', 'null'];
+        if (\in_array(strtolower($arg), $phpKeywords, true)) {
+            return $arg;
+        }
+
+        // Sinon, c'est une variable - convertir la notation point
+        return $this->convertDotNotation($arg);
+    }
+
+    /**
+     * Convertit la notation point en acces tableau PHP.
+     *
+     * Exemple: "user.profile.name" devient "$user['profile']['name']"
+     *
+     * @param string $expression Expression avec notation point
+     *
+     * @return string Expression PHP valide
+     */
+    protected function convertDotNotation(string $expression): string
+    {
+        // Si deja prefixe par $, retirer le $ pour traitement uniforme
+        if (str_starts_with($expression, '$')) {
+            $expression = substr($expression, 1);
+        }
+
+        // Separe par le point
+        $parts = explode('.', $expression);
+
+        if (\count($parts) === 1) {
+            // Pas de notation point, simple variable
+            return '$' . $parts[0];
+        }
+
+        // Premier element est la variable racine
+        $result = '$' . array_shift($parts);
+
+        // Les autres elements deviennent des acces tableau
+        foreach ($parts as $part) {
+            // Gere les index numeriques et les cles string
+            if (ctype_digit($part)) {
+                $result .= '[' . $part . ']';
+            } else {
+                $result .= '[\'' . $part . '\']';
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Process a condition expression for safe PHP compilation.
+     *
+     * Handles simple variable checks (like "if user") by wrapping them with !empty()
+     * to avoid undefined variable warnings. Complex conditions with operators are
+     * passed through with dollar sign prefixes added.
+     *
+     * @param string $condition The raw condition from the template
+     *
+     * @return string Safe PHP condition expression
+     */
+    protected function processCondition(string $condition): string
+    {
+        $condition = trim($condition);
+
+        // Check if it's a simple variable check (no operators)
+        // Simple pattern: just a variable name with optional dot notation
+        if (preg_match('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $condition)) {
+            $phpVar = $this->convertDotNotation($condition);
+
+            return '!empty(' . $phpVar . ')';
+        }
+
+        // For complex conditions, add dollar signs and let PHP handle it
+        return $this->addDollarToVariables($condition);
+    }
+
+    /**
      * Ajoute le préfixe $ aux variables dans les expressions PHP.
      *
      * @param string $expression Expression PHP
+     *
      * @return string Expression avec variables préfixées
      */
     protected function addDollarToVariables(string $expression): string
     {
-        // Remplace les identifiants qui ne sont pas des fonctions par des variables
-        return preg_replace_callback('/\b([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\b/', function ($matches) {
+        // D'abord, extraire et proteger les chaines de caracteres
+        $strings = [];
+        $placeholder = '___STRING_PLACEHOLDER_%d___';
+        $index = 0;
+
+        // Protege les chaines entre guillemets doubles et simples
+        $expression = preg_replace_callback('/(["\'])(?:(?!\1)[^\\\\]|\\\\.)*\1/', function ($match) use (&$strings, &$index, $placeholder) {
+            $key = \sprintf($placeholder, $index++);
+            $strings[$key] = $match[0];
+
+            return $key;
+        }, $expression);
+
+        // Remplace les identifiants par des variables
+        $expression = preg_replace_callback('/\b([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\b/', function ($matches) {
             $var = $matches[1];
-            
+
             // Ne pas modifier les mots-clés PHP, constantes, ou appels de fonctions
             $phpKeywords = ['true', 'false', 'null', 'and', 'or', 'not', 'isset', 'empty', 'array', 'count'];
-            if (in_array(strtolower($var), $phpKeywords)) {
+            if (\in_array(strtolower($var), $phpKeywords, true)) {
                 return $var;
             }
-            
-            // Ne pas modifier si c'est déjà une variable ou une fonction
+
+            // Ne pas modifier si c'est déjà une variable (défense en profondeur)
+            // @codeCoverageIgnoreStart
             if (str_starts_with($var, '$')) {
                 return $var;
             }
-            
-            // Ajouter le préfixe $
-            return '$' . $var;
+            // @codeCoverageIgnoreEnd
+
+            // Ne pas modifier les placeholders
+            if (str_contains($var, '___STRING_PLACEHOLDER_')) {
+                return $var;
+            }
+
+            // Convertit la notation point
+            return $this->convertDotNotation($var);
         }, $expression);
+
+        // Restaure les chaines de caracteres
+        foreach ($strings as $key => $value) {
+            $expression = str_replace($key, $value, $expression);
+        }
+
+        return $expression;
     }
 
     /**
-     * Définit des variables par défaut pour les templates.
+     * Retourne les variables par défaut pour les templates.
      * Cette méthode peut être surchargée pour personnaliser les variables par défaut.
+     *
+     * @return array<string, mixed>
      */
-    protected function setDefaultVariables(): void
+    protected function getDefaultVariables(): array
     {
-        // Variables définies uniquement si elles n'existent pas déjà
-        if (!isset($title)) $title = '';
-        if (!isset($description)) $description = '';
-        if (!isset($keywords)) $keywords = '';
-        if (!isset($author)) $author = '';
-        if (!isset($charset)) $charset = 'UTF-8';
-        if (!isset($viewport)) $viewport = 'width=device-width, initial-scale=1.0';
-        if (!isset($lang)) $lang = 'en';
-        if (!isset($favicon)) $favicon = '/favicon.ico';
-        if (!isset($baseUrl)) $baseUrl = '/';
-        if (!isset($basePath)) $basePath = '/';
+        return [
+            'title' => '',
+            'description' => '',
+            'keywords' => '',
+            'author' => '',
+            'charset' => 'UTF-8',
+            'viewport' => 'width=device-width, initial-scale=1.0',
+            'lang' => 'en',
+            'favicon' => '/favicon.ico',
+            'baseUrl' => '/',
+            'basePath' => '/',
+        ];
     }
 
     /**
@@ -411,22 +560,25 @@ class AdvancedTemplateEngine
         }
 
         $files = glob($directory . '/*.php');
+        // @codeCoverageIgnoreStart
         if ($files === false) {
             return;
         }
+        // @codeCoverageIgnoreEnd
 
         foreach ($files as $file) {
             require_once $file;
-            
+
             $className = $namespace . '\\' . pathinfo($file, PATHINFO_FILENAME);
-            
+
             if (class_exists($className)) {
-                $reflection = new \ReflectionClass($className);
-                
+                $reflection = new ReflectionClass($className);
+
                 if ($reflection->implementsInterface(MacroInterface::class) && $reflection->isInstantiable()) {
                     $constructor = $reflection->getConstructor();
-                    
+
                     if ($constructor === null || $constructor->getNumberOfRequiredParameters() === 0) {
+                        /** @var MacroInterface $instance */
                         $instance = new $className();
                         $this->registerMacroInstance($instance);
                     }
@@ -439,11 +591,13 @@ class AdvancedTemplateEngine
      * Vérifie si un template existe.
      *
      * @param string $template Nom du template
+     *
      * @return bool
      */
     public function templateExists(string $template): bool
     {
         $templateFile = $this->templatePath . '/' . $template . '.tpl';
+
         return file_exists($templateFile);
     }
 
@@ -457,7 +611,7 @@ class AdvancedTemplateEngine
         if ($template !== null) {
             $templateFile = $this->templatePath . '/' . $template . '.tpl';
             $compiledFile = $this->cachePath . '/' . md5($templateFile) . '.php';
-            
+
             if (file_exists($compiledFile)) {
                 unlink($compiledFile);
             }
