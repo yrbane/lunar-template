@@ -1,15 +1,19 @@
 <?php
+
 /**
  * Exception spécifique au moteur de templates.
  *
  * @since 1.0.0
+ *
  * @author seb@nethttp.net
  */
 declare(strict_types=1);
 
 namespace Lunar\Template\Exception;
 
-class TemplateException extends \Exception
+use Exception;
+
+class TemplateException extends Exception
 {
     public static function templateNotFound(string $template): self
     {

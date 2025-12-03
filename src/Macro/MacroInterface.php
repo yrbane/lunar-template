@@ -1,11 +1,11 @@
 <?php
+
+declare(strict_types=1);
 /**
- *
  * @since 0.0.1
  * @link https://nethttp.net
+ *
  * @Author seb@nethttp.net
- *
- *
  */
 
 namespace Lunar\Template\Macro;
@@ -18,7 +18,7 @@ interface MacroInterface
      * La méthode appelée quand le moteur appelle la macro.
      *
      * @param array<int, mixed> $args
-     * 
+     *
      * @return mixed
      */
     public function execute(array $args);

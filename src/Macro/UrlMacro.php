@@ -1,11 +1,11 @@
 <?php
+
+declare(strict_types=1);
 /**
- *
  * @since 0.0.1
  * @link https://nethttp.net
+ *
  * @Author seb@nethttp.net
- *
- *
  */
 
 namespace Lunar\Template\Macro;
@@ -34,16 +34,16 @@ class UrlMacro implements MacroInterface
 
         $route = $this->router->getRouteByName($routeName);
         if (!$route) {
-            return '#ROUTE '.$routeName.' NOT FOUND !!!';
+            return '#ROUTE ' . $routeName . ' NOT FOUND !!!';
         }
 
         $url = $route['path'];
         $params = json_decode($paramsJson, true);
-        if (!is_array($params)) {
+        if (!\is_array($params)) {
             $params = [];
         }
         if (!empty($params)) {
-            $url .= '?'.http_build_query($params);
+            $url .= '?' . http_build_query($params);
         }
 
         return $url;
