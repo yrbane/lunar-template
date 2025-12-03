@@ -36,7 +36,7 @@ final class InitialsMacro implements MacroInterface
 
         $initials = array_map(
             fn (string $word): string => mb_strtoupper(mb_substr($word, 0, 1)),
-            $words
+            $words,
         );
 
         return implode('', \array_slice($initials, 0, $maxLength));

@@ -9,6 +9,7 @@ namespace Lunar\Template\Macro;
  *
  * Usage:
  * - ##mask("1234567890123456")## - ************3456
+ *
  * - ##mask("john@example.com", "email")## - j***@example.com
  * - ##mask("555-123-4567", "phone")## - ***-***-4567
  * - ##mask("secret", "full")## - ******

@@ -160,6 +160,7 @@ class TemplateRenderer implements RendererInterface
      * @param string $name Filter name
      * @param mixed $value Value to filter
      * @param array<int, mixed> $args Filter arguments
+     *
      * @return mixed Filtered value
      */
     public function applyFilter(string $name, mixed $value, array $args = []): mixed

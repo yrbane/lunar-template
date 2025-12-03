@@ -49,7 +49,7 @@ final class MarkdownFilter extends AbstractFilter
         return (string) preg_replace(
             '/```(\w*)\n([\s\S]*?)```/',
             '<pre><code class="language-$1">$2</code></pre>',
-            $text
+            $text,
         );
     }
 
@@ -63,7 +63,7 @@ final class MarkdownFilter extends AbstractFilter
         return (string) preg_replace(
             '/!\[([^\]]*)\]\(([^)]+)\)/',
             '<img src="$2" alt="$1">',
-            $text
+            $text,
         );
     }
 
@@ -72,7 +72,7 @@ final class MarkdownFilter extends AbstractFilter
         return (string) preg_replace(
             '/\[([^\]]+)\]\(([^)]+)\)/',
             '<a href="$2">$1</a>',
-            $text
+            $text,
         );
     }
 
@@ -131,12 +131,12 @@ final class MarkdownFilter extends AbstractFilter
                 }
                 $listItems = array_map(
                     fn (string $item): string => '<li>' . preg_replace('/^[*\-+] /', '', $item) . '</li>',
-                    $items
+                    $items,
                 );
 
                 return '<ul>' . implode('', $listItems) . '</ul>';
             },
-            $text
+            $text,
         );
     }
 
@@ -152,12 +152,12 @@ final class MarkdownFilter extends AbstractFilter
                 }
                 $listItems = array_map(
                     fn (string $item): string => '<li>' . preg_replace('/^\d+\. /', '', $item) . '</li>',
-                    $items
+                    $items,
                 );
 
                 return '<ol>' . implode('', $listItems) . '</ol>';
             },
-            $text
+            $text,
         );
     }
 }

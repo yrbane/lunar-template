@@ -8,6 +8,7 @@ use Lunar\Cli\AbstractCommand;
 use Lunar\Cli\Attribute\Command;
 use Lunar\Cli\Helper\ConsoleHelper as C;
 use Lunar\Template\AdvancedTemplateEngine;
+use Throwable;
 
 #[Command(name: 'template:compile', description: 'Compile a template without rendering')]
 final class CompileCommand extends AbstractCommand
@@ -44,10 +45,10 @@ final class CompileCommand extends AbstractCommand
             // Render with empty data to trigger compilation
             $engine->render($template, []);
 
-            C::success("Template compiled successfully");
+            C::success('Template compiled successfully');
 
             return 0;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             C::error("Compilation failed: {$e->getMessage()}");
 
             return 1;
@@ -57,25 +58,25 @@ final class CompileCommand extends AbstractCommand
     public function getHelp(): string
     {
         return <<<'HELP'
-Command: template:compile
-Compile a template without rendering it.
+            Command: template:compile
+            Compile a template without rendering it.
 
-Usage:
-  lunar-template template:compile <template> [options]
+            Usage:
+              lunar-template template:compile <template> [options]
 
-Arguments:
-  template              Template name (without extension)
+            Arguments:
+              template              Template name (without extension)
 
-Options:
-  --templates=<path>    Templates directory (default: ./templates)
-  --cache=<path>        Cache directory (default: ./cache)
-  --help                Show this help
+            Options:
+              --templates=<path>    Templates directory (default: ./templates)
+              --cache=<path>        Cache directory (default: ./cache)
+              --help                Show this help
 
-Examples:
-  lunar-template template:compile home
-  lunar-template template:compile blog/article
-  lunar-template template:compile page --templates=/app/views --cache=/tmp/cache
+            Examples:
+              lunar-template template:compile home
+              lunar-template template:compile blog/article
+              lunar-template template:compile page --templates=/app/views --cache=/tmp/cache
 
-HELP;
+            HELP;
     }
 }

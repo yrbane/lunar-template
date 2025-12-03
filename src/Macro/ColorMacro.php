@@ -42,7 +42,7 @@ final class ColorMacro implements MacroInterface
         $value = $args[2] ?? 0;
 
         if ($color === 'random') {
-            return sprintf('#%06X', random_int(0, 0xFFFFFF));
+            return \sprintf('#%06X', random_int(0, 0xFFFFFF));
         }
 
         // Named color
@@ -68,7 +68,7 @@ final class ColorMacro implements MacroInterface
             'lighten' => $this->lighten($rgb, (float) $value),
             'darken' => $this->darken($rgb, (float) $value),
             'alpha', 'opacity' => $this->withAlpha($rgb, (float) $value),
-            'rgb' => sprintf('rgb(%d, %d, %d)', $rgb['r'], $rgb['g'], $rgb['b']),
+            'rgb' => \sprintf('rgb(%d, %d, %d)', $rgb['r'], $rgb['g'], $rgb['b']),
             'hsl' => $this->toHsl($rgb),
             default => $color,
         };
@@ -103,11 +103,11 @@ final class ColorMacro implements MacroInterface
     {
         $factor = 1 + ($percent / 100);
 
-        return sprintf(
+        return \sprintf(
             '#%02X%02X%02X',
             min(255, (int) ($rgb['r'] * $factor)),
             min(255, (int) ($rgb['g'] * $factor)),
-            min(255, (int) ($rgb['b'] * $factor))
+            min(255, (int) ($rgb['b'] * $factor)),
         );
     }
 
@@ -118,11 +118,11 @@ final class ColorMacro implements MacroInterface
     {
         $factor = 1 - ($percent / 100);
 
-        return sprintf(
+        return \sprintf(
             '#%02X%02X%02X',
             max(0, (int) ($rgb['r'] * $factor)),
             max(0, (int) ($rgb['g'] * $factor)),
-            max(0, (int) ($rgb['b'] * $factor))
+            max(0, (int) ($rgb['b'] * $factor)),
         );
     }
 
@@ -133,7 +133,7 @@ final class ColorMacro implements MacroInterface
     {
         $alpha = max(0, min(1, $alpha));
 
-        return sprintf('rgba(%d, %d, %d, %s)', $rgb['r'], $rgb['g'], $rgb['b'], $alpha);
+        return \sprintf('rgba(%d, %d, %d, %s)', $rgb['r'], $rgb['g'], $rgb['b'], $alpha);
     }
 
     /**
@@ -162,6 +162,6 @@ final class ColorMacro implements MacroInterface
             };
         }
 
-        return sprintf('hsl(%d, %d%%, %d%%)', (int) ($h * 360), (int) ($s * 100), (int) ($l * 100));
+        return \sprintf('hsl(%d, %d%%, %d%%)', (int) ($h * 360), (int) ($s * 100), (int) ($l * 100));
     }
 }

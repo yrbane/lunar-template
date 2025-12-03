@@ -20,7 +20,7 @@ class FilterRegistryTest extends TestCase
 
     public function testRegisterFilter(): void
     {
-        $this->registry->register('upper', fn(string $value) => strtoupper($value));
+        $this->registry->register('upper', fn (string $value) => strtoupper($value));
 
         $this->assertTrue($this->registry->has('upper'));
     }
@@ -42,7 +42,7 @@ class FilterRegistryTest extends TestCase
 
     public function testGetFilter(): void
     {
-        $callback = fn(string $value) => strtoupper($value);
+        $callback = fn (string $value) => strtoupper($value);
         $this->registry->register('upper', $callback);
 
         $this->assertSame($callback, $this->registry->get('upper'));
@@ -58,7 +58,7 @@ class FilterRegistryTest extends TestCase
 
     public function testApplyCallable(): void
     {
-        $this->registry->register('upper', fn(string $value) => strtoupper($value));
+        $this->registry->register('upper', fn (string $value) => strtoupper($value));
 
         $result = $this->registry->apply('upper', 'hello');
 
@@ -67,7 +67,7 @@ class FilterRegistryTest extends TestCase
 
     public function testApplyCallableWithArgs(): void
     {
-        $this->registry->register('truncate', fn(string $value, int $length) => substr($value, 0, $length));
+        $this->registry->register('truncate', fn (string $value, int $length) => substr($value, 0, $length));
 
         $result = $this->registry->apply('truncate', 'hello world', [5]);
 
@@ -96,8 +96,8 @@ class FilterRegistryTest extends TestCase
 
     public function testGetNames(): void
     {
-        $this->registry->register('one', fn($v) => $v);
-        $this->registry->register('two', fn($v) => $v);
+        $this->registry->register('one', fn ($v) => $v);
+        $this->registry->register('two', fn ($v) => $v);
 
         $names = $this->registry->getNames();
 
@@ -112,7 +112,7 @@ class FilterRegistryTest extends TestCase
 
     public function testRemoveFilter(): void
     {
-        $this->registry->register('test', fn($v) => $v);
+        $this->registry->register('test', fn ($v) => $v);
         $this->assertTrue($this->registry->has('test'));
 
         $this->registry->remove('test');
@@ -129,8 +129,8 @@ class FilterRegistryTest extends TestCase
 
     public function testClear(): void
     {
-        $this->registry->register('one', fn($v) => $v);
-        $this->registry->register('two', fn($v) => $v);
+        $this->registry->register('one', fn ($v) => $v);
+        $this->registry->register('two', fn ($v) => $v);
 
         $this->registry->clear();
 
@@ -141,18 +141,18 @@ class FilterRegistryTest extends TestCase
     {
         $this->assertSame(0, $this->registry->count());
 
-        $this->registry->register('one', fn($v) => $v);
+        $this->registry->register('one', fn ($v) => $v);
         $this->assertSame(1, $this->registry->count());
 
-        $this->registry->register('two', fn($v) => $v);
+        $this->registry->register('two', fn ($v) => $v);
         $this->assertSame(2, $this->registry->count());
     }
 
     public function testFluentInterface(): void
     {
         $result = $this->registry
-            ->register('one', fn($v) => $v)
-            ->register('two', fn($v) => $v)
+            ->register('one', fn ($v) => $v)
+            ->register('two', fn ($v) => $v)
             ->remove('one')
             ->clear();
 

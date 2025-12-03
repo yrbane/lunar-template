@@ -26,7 +26,7 @@ class UuidMacroTest extends TestCase
         $result = $this->macro->execute([]);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
-            $result
+            $result,
         );
     }
 
@@ -44,7 +44,7 @@ class UuidMacroTest extends TestCase
         $result = $this->macro->execute(['ignored', 'args']);
         $this->assertMatchesRegularExpression(
             '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
-            $result
+            $result,
         );
     }
 }

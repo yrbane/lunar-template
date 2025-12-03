@@ -27,11 +27,11 @@ final class GravatarMacro implements MacroInterface
 
         $hash = md5(strtolower(trim($email)));
 
-        return sprintf(
+        return \sprintf(
             'https://www.gravatar.com/avatar/%s?s=%d&d=%s',
             $hash,
             $size,
-            urlencode($default)
+            urlencode($default),
         );
     }
 }

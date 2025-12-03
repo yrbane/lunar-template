@@ -6,6 +6,7 @@ namespace Lunar\Template\Macro;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use Exception;
 
 /**
  * Generate countdown to a future date.
@@ -99,7 +100,7 @@ final class CountdownMacro implements MacroInterface
         if (\is_string($value) && $value !== '') {
             try {
                 return new DateTimeImmutable($value);
-            } catch (\Exception) {
+            } catch (Exception) {
                 return null;
             }
         }

@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Tests\Unit\Filter;
 
+use ArrayObject;
 use Lunar\Template\Filter\AbstractFilter;
 use Lunar\Template\Filter\Array\FilterArrayFilter;
 use Lunar\Template\Filter\Array\GroupByFilter;
 use Lunar\Template\Filter\Array\PluckFilter;
 use Lunar\Template\Filter\Array\SortFilter;
-use Lunar\Template\Filter\FilterInterface;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 class EdgeCasesTest extends TestCase
 {
     public function testAbstractFilterToStringWithObject(): void
     {
-        $filter = new class extends AbstractFilter {
+        $filter = new class () extends AbstractFilter {
             public function getName(): string
             {
                 return 'test';
@@ -29,7 +30,7 @@ class EdgeCasesTest extends TestCase
         };
 
         // Object with __toString
-        $obj = new class {
+        $obj = new class () {
             public function __toString(): string
             {
                 return 'stringified';
@@ -48,7 +49,7 @@ class EdgeCasesTest extends TestCase
         $this->assertSame('a, b, c', $filter->apply(['a', 'b', 'c']));
 
         // Object without __toString
-        $plainObj = new \stdClass();
+        $plainObj = new stdClass();
         $this->assertSame('', $filter->apply($plainObj));
     }
 
@@ -160,7 +161,7 @@ class EdgeCasesTest extends TestCase
     {
         $filter = new \Lunar\Template\Filter\Array\LengthFilter();
 
-        $countable = new \ArrayObject([1, 2, 3]);
+        $countable = new ArrayObject([1, 2, 3]);
         $this->assertSame(3, $filter->apply($countable));
     }
 
@@ -237,7 +238,7 @@ class EdgeCasesTest extends TestCase
     public function testMapFilterNonArray(): void
     {
         $filter = new \Lunar\Template\Filter\Array\MapFilter(
-            \Lunar\Template\Filter\DefaultFilters::create()
+            \Lunar\Template\Filter\DefaultFilters::create(),
         );
 
         $this->assertSame([], $filter->apply('not array'));

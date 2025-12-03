@@ -30,11 +30,11 @@ final class EmbedVimeoMacro implements MacroInterface
 
         $url = 'https://player.vimeo.com/video/' . $videoId . '?dnt=1';
 
-        return sprintf(
+        return \sprintf(
             '<iframe width="%d" height="%d" src="%s" title="Vimeo video" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>',
             $width,
             $height,
-            htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
+            htmlspecialchars($url, ENT_QUOTES, 'UTF-8'),
         );
     }
 

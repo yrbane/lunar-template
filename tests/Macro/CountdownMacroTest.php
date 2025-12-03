@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Tests\Macro;
 
+use DateTimeImmutable;
 use Lunar\Template\Macro\CountdownMacro;
 use PHPUnit\Framework\TestCase;
 
@@ -64,7 +65,7 @@ class CountdownMacroTest extends TestCase
 
     public function testExecuteWithDateTimeObject(): void
     {
-        $date = new \DateTimeImmutable('+3 days');
+        $date = new DateTimeImmutable('+3 days');
         $result = $this->macro->execute([$date]);
         $this->assertStringContainsString('day', $result);
     }

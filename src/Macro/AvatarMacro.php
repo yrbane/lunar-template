@@ -27,13 +27,13 @@ final class AvatarMacro implements MacroInterface
         $color = (string) ($args[3] ?? 'ffffff');
         $rounded = (bool) ($args[4] ?? true);
 
-        return sprintf(
+        return \sprintf(
             'https://ui-avatars.com/api/?name=%s&size=%d&background=%s&color=%s&rounded=%s',
             urlencode($name),
             $size,
             $background,
             $color,
-            $rounded ? 'true' : 'false'
+            $rounded ? 'true' : 'false',
         );
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Tests\Unit\Filter;
 
+use Lunar\Template\Filter\FilterInterface;
 use Lunar\Template\Filter\Html\AnchorFilter;
 use Lunar\Template\Filter\Html\AttributesFilter;
 use Lunar\Template\Filter\Html\ClassListFilter;
@@ -720,13 +721,13 @@ final class HtmlFormattingFiltersTest extends TestCase
     // ==================== Integration Tests ====================
 
     #[DataProvider('filterNamesProvider')]
-    public function testAllFiltersHaveCorrectNames(string $expectedName, object $filter): void
+    public function testAllFiltersHaveCorrectNames(string $expectedName, FilterInterface $filter): void
     {
         $this->assertSame($expectedName, $filter->getName());
     }
 
     /**
-     * @return array<string, array{string, object}>
+     * @return array<string, array{string, FilterInterface}>
      */
     public static function filterNamesProvider(): array
     {

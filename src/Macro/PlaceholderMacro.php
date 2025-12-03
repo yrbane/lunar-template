@@ -27,12 +27,12 @@ final class PlaceholderMacro implements MacroInterface
         $bgColor = (string) ($args[3] ?? 'cccccc');
         $textColor = (string) ($args[4] ?? '969696');
 
-        $url = sprintf(
+        $url = \sprintf(
             'https://via.placeholder.com/%dx%d/%s/%s',
             $width,
             $height,
             $bgColor,
-            $textColor
+            $textColor,
         );
 
         if ($text !== '') {

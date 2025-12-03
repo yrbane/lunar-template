@@ -156,7 +156,7 @@ class FilterIntegrationTest extends TestCase
 
     public function testCustomFilter(): void
     {
-        $this->renderer->registerFilter('double', fn($value) => $value * 2);
+        $this->renderer->registerFilter('double', fn ($value) => $value * 2);
         $this->createTemplate('custom.tpl', '[[ number | double ]]');
 
         $result = $this->renderer->render('custom', ['number' => 5]);

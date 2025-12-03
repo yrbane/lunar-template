@@ -52,7 +52,7 @@ final class MoneyMacro implements MacroInterface
             $amount,
             $config['decimals'],
             ',',
-            ' '
+            ' ',
         );
 
         return $config['position'] === 'before'

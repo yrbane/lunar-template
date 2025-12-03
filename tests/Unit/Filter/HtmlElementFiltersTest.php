@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Tests\Unit\Filter;
 
+use Lunar\Template\Filter\FilterInterface;
 use Lunar\Template\Filter\Html\AbbrFilter;
 use Lunar\Template\Filter\Html\AFilter;
 use Lunar\Template\Filter\Html\AudioFilter;
@@ -647,13 +648,13 @@ final class HtmlElementFiltersTest extends TestCase
     // ==================== Integration Test ====================
 
     #[DataProvider('filterNamesProvider')]
-    public function testAllFiltersHaveCorrectNames(string $expectedName, object $filter): void
+    public function testAllFiltersHaveCorrectNames(string $expectedName, FilterInterface $filter): void
     {
         $this->assertSame($expectedName, $filter->getName());
     }
 
     /**
-     * @return array<string, array{string, object}>
+     * @return array<string, array{string, FilterInterface}>
      */
     public static function filterNamesProvider(): array
     {

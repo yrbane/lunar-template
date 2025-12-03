@@ -111,7 +111,7 @@ class EncodingFiltersTest extends TestCase
         $this->assertSame('sha256', $filter->getName());
         $this->assertSame(
             'a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e',
-            $filter->apply('Hello World')
+            $filter->apply('Hello World'),
         );
     }
 }

@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Command;
 
+use FilesystemIterator;
 use Lunar\Cli\AbstractCommand;
 use Lunar\Cli\Attribute\Command;
 use Lunar\Cli\Helper\ConsoleHelper as C;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
+use Throwable;
 
 #[Command(name: 'template:clear', description: 'Clear the template cache')]
 final class ClearCommand extends AbstractCommand
@@ -30,20 +35,20 @@ final class ClearCommand extends AbstractCommand
         }
 
         try {
-            C::subtitle("Clearing template cache");
+            C::subtitle('Clearing template cache');
             echo "Cache: {$cachePath}\n";
             echo "\n";
 
             $files = $this->findCacheFiles($cachePath);
 
             if (empty($files)) {
-                C::success("Cache is already empty");
+                C::success('Cache is already empty');
 
                 return 0;
             }
 
             if (!$force) {
-                C::warning("Found " . count($files) . " cached file(s)");
+                C::warning('Found ' . \count($files) . ' cached file(s)');
                 echo "Use --force to confirm deletion\n";
 
                 return 0;
@@ -71,7 +76,7 @@ final class ClearCommand extends AbstractCommand
             }
 
             return 0;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             C::error("Cache clearing failed: {$e->getMessage()}");
 
             return 1;
@@ -84,13 +89,13 @@ final class ClearCommand extends AbstractCommand
     private function findCacheFiles(string $directory): array
     {
         $files = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
         );
 
         foreach ($iterator as $file) {
-            if ($file instanceof \SplFileInfo && $file->isFile()) {
+            if ($file instanceof SplFileInfo && $file->isFile()) {
                 if ($file->getExtension() === 'php') {
                     $files[] = $file->getPathname();
                 }
@@ -103,22 +108,22 @@ final class ClearCommand extends AbstractCommand
     public function getHelp(): string
     {
         return <<<'HELP'
-Command: template:clear
-Clear the template cache.
+            Command: template:clear
+            Clear the template cache.
 
-Usage:
-  lunar-template template:clear [options]
+            Usage:
+              lunar-template template:clear [options]
 
-Options:
-  --cache=<path>        Cache directory (default: ./cache)
-  --force               Actually delete the files (required)
-  --help                Show this help
+            Options:
+              --cache=<path>        Cache directory (default: ./cache)
+              --force               Actually delete the files (required)
+              --help                Show this help
 
-Examples:
-  lunar-template template:clear                   # Shows what would be deleted
-  lunar-template template:clear --force           # Actually deletes cache
-  lunar-template template:clear --cache=/tmp/cache --force
+            Examples:
+              lunar-template template:clear                   # Shows what would be deleted
+              lunar-template template:clear --force           # Actually deletes cache
+              lunar-template template:clear --cache=/tmp/cache --force
 
-HELP;
+            HELP;
     }
 }

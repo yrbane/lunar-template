@@ -8,6 +8,7 @@ use Lunar\Cli\AbstractCommand;
 use Lunar\Cli\Attribute\Command;
 use Lunar\Cli\Helper\ConsoleHelper as C;
 use Lunar\Template\AdvancedTemplateEngine;
+use Throwable;
 
 #[Command(name: 'template:render', description: 'Render a template with variables')]
 final class RenderCommand extends AbstractCommand
@@ -53,7 +54,7 @@ final class RenderCommand extends AbstractCommand
                 return 1;
             }
             $data = json_decode($json, true);
-            if (!is_array($data)) {
+            if (!\is_array($data)) {
                 C::error("Invalid JSON in data file: {$dataFile}");
 
                 return 1;
@@ -67,9 +68,9 @@ final class RenderCommand extends AbstractCommand
             $html = $engine->render($template, $data);
 
             if ($output !== null) {
-                $dir = dirname($output);
+                $dir = \dirname($output);
                 if (!is_dir($dir)) {
-                    mkdir($dir, 0755, true);
+                    mkdir($dir, 0o755, true);
                 }
                 file_put_contents($output, $html);
                 C::success("Output written to: {$output}");
@@ -78,7 +79,7 @@ final class RenderCommand extends AbstractCommand
             }
 
             return 0;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             C::error("Render failed: {$e->getMessage()}");
 
             return 1;
@@ -88,28 +89,28 @@ final class RenderCommand extends AbstractCommand
     public function getHelp(): string
     {
         return <<<'HELP'
-Command: template:render
-Render a template with variables.
+            Command: template:render
+            Render a template with variables.
 
-Usage:
-  lunar-template template:render <template> [options]
+            Usage:
+              lunar-template template:render <template> [options]
 
-Arguments:
-  template              Template name (without extension)
+            Arguments:
+              template              Template name (without extension)
 
-Options:
-  --templates=<path>    Templates directory (default: ./templates)
-  --cache=<path>        Cache directory (default: ./cache)
-  --data=<file>         JSON file with variables
-  --output=<file>       Output file (default: stdout)
-  --help                Show this help
+            Options:
+              --templates=<path>    Templates directory (default: ./templates)
+              --cache=<path>        Cache directory (default: ./cache)
+              --data=<file>         JSON file with variables
+              --output=<file>       Output file (default: stdout)
+              --help                Show this help
 
-Examples:
-  lunar-template template:render home
-  lunar-template template:render blog/article --data=article.json
-  lunar-template template:render page --output=dist/page.html
-  lunar-template template:render email --templates=/app/views --cache=/tmp/cache
+            Examples:
+              lunar-template template:render home
+              lunar-template template:render blog/article --data=article.json
+              lunar-template template:render page --output=dist/page.html
+              lunar-template template:render email --templates=/app/views --cache=/tmp/cache
 
-HELP;
+            HELP;
     }
 }

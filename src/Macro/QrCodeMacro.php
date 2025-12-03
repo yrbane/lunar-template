@@ -29,11 +29,11 @@ final class QrCodeMacro implements MacroInterface
             return '';
         }
 
-        $url = sprintf(
+        $url = \sprintf(
             'https://api.qrserver.com/v1/create-qr-code/?size=%dx%d&data=%s',
             $size,
             $size,
-            urlencode($data)
+            urlencode($data),
         );
 
         if ($mode === 'img') {

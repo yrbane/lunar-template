@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Tests\Macro;
 
+use DateTimeImmutable;
 use Lunar\Template\Macro\TimeAgoMacro;
 use PHPUnit\Framework\TestCase;
 
@@ -68,7 +69,7 @@ class TimeAgoMacroTest extends TestCase
 
     public function testExecuteWithDateTimeObject(): void
     {
-        $date = new \DateTimeImmutable('-1 week');
+        $date = new DateTimeImmutable('-1 week');
         $result = $this->macro->execute([$date]);
         $this->assertStringContainsString('1 week ago', $result);
     }

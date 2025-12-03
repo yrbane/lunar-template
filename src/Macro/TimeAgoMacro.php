@@ -6,6 +6,7 @@ namespace Lunar\Template\Macro;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use Exception;
 
 /**
  * Generate relative time with <time> element.
@@ -92,7 +93,7 @@ final class TimeAgoMacro implements MacroInterface
         if (\is_string($value) && $value !== '') {
             try {
                 return new DateTimeImmutable($value);
-            } catch (\Exception) {
+            } catch (Exception) {
                 return null;
             }
         }

@@ -43,7 +43,7 @@ final class HighlightFilter extends AbstractFilter
         return (string) preg_replace_callback(
             $pattern,
             fn (array $matches): string => $tag . htmlspecialchars($matches[0], ENT_QUOTES, 'UTF-8') . '</mark>',
-            $text
+            $text,
         );
     }
 }

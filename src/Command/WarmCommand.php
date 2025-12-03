@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Command;
 
+use FilesystemIterator;
 use Lunar\Cli\AbstractCommand;
 use Lunar\Cli\Attribute\Command;
 use Lunar\Cli\Helper\ConsoleHelper as C;
 use Lunar\Template\AdvancedTemplateEngine;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
+use Throwable;
 
 #[Command(name: 'template:warm', description: 'Pre-compile all templates to warm the cache')]
 final class WarmCommand extends AbstractCommand
@@ -32,7 +37,7 @@ final class WarmCommand extends AbstractCommand
         }
 
         try {
-            C::subtitle("Warming template cache");
+            C::subtitle('Warming template cache');
             echo "Templates: {$templatePath}\n";
             echo "Cache: {$cachePath}\n";
             echo "\n";
@@ -58,7 +63,7 @@ final class WarmCommand extends AbstractCommand
                     $engine->render($templateName, []);
                     C::success("Compiled: {$templateName}");
                     $compiled++;
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     C::error("Failed: {$templateName} - {$e->getMessage()}");
                     $failed++;
                 }
@@ -72,7 +77,7 @@ final class WarmCommand extends AbstractCommand
             }
 
             return $failed > 0 ? 1 : 0;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             C::error("Cache warming failed: {$e->getMessage()}");
 
             return 1;
@@ -85,12 +90,12 @@ final class WarmCommand extends AbstractCommand
     private function findTemplates(string $directory, string $extension): array
     {
         $templates = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $file) {
-            if ($file instanceof \SplFileInfo && $file->isFile()) {
+            if ($file instanceof SplFileInfo && $file->isFile()) {
                 if ($file->getExtension() === $extension) {
                     $templates[] = $file->getPathname();
                 }
@@ -105,24 +110,24 @@ final class WarmCommand extends AbstractCommand
     public function getHelp(): string
     {
         return <<<'HELP'
-Command: template:warm
-Pre-compile all templates to warm the cache.
+            Command: template:warm
+            Pre-compile all templates to warm the cache.
 
-Usage:
-  lunar-template template:warm [options]
+            Usage:
+              lunar-template template:warm [options]
 
-Options:
-  --templates=<path>    Templates directory (default: ./templates)
-  --cache=<path>        Cache directory (default: ./cache)
-  --ext=<extension>     Template file extension (default: tpl)
-  --help                Show this help
+            Options:
+              --templates=<path>    Templates directory (default: ./templates)
+              --cache=<path>        Cache directory (default: ./cache)
+              --ext=<extension>     Template file extension (default: tpl)
+              --help                Show this help
 
-Examples:
-  lunar-template template:warm
-  lunar-template template:warm --templates=/app/views
-  lunar-template template:warm --ext=twig
-  lunar-template template:warm --templates=/app/views --cache=/tmp/cache
+            Examples:
+              lunar-template template:warm
+              lunar-template template:warm --templates=/app/views
+              lunar-template template:warm --ext=twig
+              lunar-template template:warm --templates=/app/views --cache=/tmp/cache
 
-HELP;
+            HELP;
     }
 }

@@ -49,7 +49,7 @@ final class ParagraphFilter extends AbstractFilter
 
                 return '<p>' . $p . '</p>';
             },
-            $paragraphs
+            $paragraphs,
         );
 
         return implode("\n", array_filter($result));

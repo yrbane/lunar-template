@@ -37,11 +37,11 @@ final class EmbedYoutubeMacro implements MacroInterface
 
         $url = 'https://www.youtube-nocookie.com/embed/' . $videoId . '?' . implode('&', $params);
 
-        return sprintf(
+        return \sprintf(
             '<iframe width="%d" height="%d" src="%s" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>',
             $width,
             $height,
-            htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
+            htmlspecialchars($url, ENT_QUOTES, 'UTF-8'),
         );
     }
 

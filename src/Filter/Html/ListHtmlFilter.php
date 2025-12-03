@@ -36,7 +36,7 @@ final class ListHtmlFilter implements FilterInterface
 
         $items = array_map(
             fn (mixed $item): string => '<li>' . htmlspecialchars($this->itemToString($item), ENT_QUOTES, 'UTF-8') . '</li>',
-            array_values($value)
+            array_values($value),
         );
 
         return '<' . $tag . $class . '>' . implode('', $items) . '</' . $tag . '>';
