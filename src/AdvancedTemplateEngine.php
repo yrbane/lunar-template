@@ -40,6 +40,9 @@ class AdvancedTemplateEngine
     /** @var array<string, callable> Liste des macros enregistrées */
     protected array $macros = [];
 
+    /** @var bool Si true, une exception est levée pour les variables indéfinies ou null. */
+    protected bool $strictVariables = false;
+
     /**
      * AdvancedTemplateEngine constructor.
      *
@@ -265,9 +268,27 @@ class AdvancedTemplateEngine
             }
 
             // Convertit la notation point en acces tableau/objet PHP
-            $expression = $this->convertDotNotation($expression);
-
-            return '<?= htmlspecialchars((string)(' . $expression . ' ?? \'\'), ENT_QUOTES, \'UTF-8\') ?>';
+            $phpVar = $this->convertDotNotation($expression);
+            
+            // Injecter la logique du mode strict directement dans le code PHP généré
+            $phpCode = '<?php ';
+            $phpCode .= 'if ($engine->isStrictMode()) { ';
+            // Vérifier si la variable finale est UNDEFINED
+            $phpCode .= '    if (!isset(' . $phpVar . ')) { ';
+            $phpCode .= '        throw new Lunar\\Template\\Exception\\TemplateException(sprintf("Undefined variable \\"%s\\" in strict mode.", \'' . $expression . '\')); ';
+            $phpCode .= '    } ';
+            
+            // Vérifier si la variable finale est NULL
+            $phpCode .= '    if (' . $phpVar . ' === null) { ';
+            $phpCode .= '        throw new Lunar\\Template\\Exception\\TemplateException(sprintf("Variable \\"%s\\" is null in strict mode.", \'' . $expression . '\')); ';
+            $phpCode .= '    } ';
+            $phpCode .= '    echo htmlspecialchars((string)' . $phpVar . ', ENT_QUOTES, \'UTF-8\'); ';
+            $phpCode .= '} else { '; // Else du if ($engine->isStrictMode())
+            // Comportement par défaut (non strict): afficher une chaîne vide si indéfinie ou null.
+            $phpCode .= '    echo htmlspecialchars((string)(' . $phpVar . ' ?? \'\'), ENT_QUOTES, \'UTF-8\'); ';
+            $phpCode .= '} ?>'; // Fermeture du bloc PHP
+            
+            return $phpCode;
         }, $source);
 
         // Traitement des conditions.
@@ -677,5 +698,24 @@ class AdvancedTemplateEngine
     public function getRegisteredMacros(): array
     {
         return $this->macros;
+    }
+
+    /**
+     * Définit si le moteur doit être en mode strict pour les variables.
+     * En mode strict, une exception est levée pour les variables indéfinies ou null.
+     *
+     * @param bool $strict
+     */
+    public function setStrictVariables(bool $strict): void
+    {
+        $this->strictVariables = $strict;
+    }
+
+    /**
+     * Retourne si le moteur est en mode strict.
+     */
+    public function isStrictMode(): bool
+    {
+        return $this->strictVariables;
     }
 }

@@ -48,14 +48,17 @@ Il faut créer une classe utilitaire `AttributeBag` ou `HtmlHelper` qui accepte 
 ### [IMP-03] Mode Strict pour les variables
 **Type** : Feature
 **Complexité** : Faible (2/5)
+**Statut** : ✅ Terminé (07/12/2025)
 **Description** :
 Par défaut, une variable inconnue `[[ typo ]]` affiche une chaîne vide. C'est bien pour la prod, mais terrible pour le dev.
 Ajouter une option de configuration `strict_variables` (bool). Si true, lancer une exception `TemplateException` si une variable est null ou non définie.
 
 **Critères d'Acceptation** :
-- [ ] Ajouter la config au constructeur de `TemplateRenderer` (ou `Config`).
-- [ ] Modifier le code généré par le compilateur pour vérifier l'existence si le mode est actif `($context['var'] ?? throw ...)`.
-- [ ] Test : Vérifier que l'exception est levée uniquement en mode strict.
+- [x] Ajouter la config au constructeur de `AdvancedTemplateEngine` (via `setStrictVariables`).
+- [x] Modifier le code généré par le compilateur pour vérifier l'existence si le mode est actif (`!isset($var)`).
+- [x] Test : Vérifier que l'exception est levée uniquement en mode strict pour les variables indéfinies.
+- [x] Test : Vérifier que l'exception est levée uniquement en mode strict pour les variables nulles.
+- [x] Test : Vérifier que le comportement par défaut (non strict) n'est pas modifié.
 
 ### [IMP-04] Source Maps pour le débogage (Basic)
 **Type** : Feature
