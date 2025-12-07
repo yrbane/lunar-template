@@ -39,8 +39,10 @@
     ],
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.91",
+        "mustache/mustache": "^3.0",
         "phpstan/phpstan": "^1.10",
-        "phpunit/phpunit": "^10.0"
+        "phpunit/phpunit": "^10.0",
+        "twig/twig": "^3.22"
     },
     "autoload-dev": {
         "psr-4": {

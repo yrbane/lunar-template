@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Technique - Lunar Template</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #475569;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+        }
+        h1 { color: var(--primary); margin: 0; }
+        h2 { margin-top: 2.5rem; color: var(--secondary); display: flex; align-items: center; gap: 0.5rem; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .badge-success { background: #dcfce7; color: var(--success); }
+        .badge-warning { background: #fef9c3; color: var(--warning); }
+        .badge-danger { background: #fee2e2; color: var(--danger); }
+        
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #f1f5f9; font-weight: 600; }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .metric {
+            text-align: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+        .metric-value { font-size: 2rem; font-weight: bold; color: var(--primary); }
+        .metric-label { font-size: 0.875rem; color: var(--secondary); }
+        
+        code { background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+        .chart-bar { height: 24px; background: var(--border); border-radius: 4px; overflow: hidden; display: flex; }
+        .chart-fill { height: 100%; background: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: end;">
+                <div>
+                    <h1>Audit Technique & Comparatif</h1>
+                    <p>Projet: <strong>Lunar Template Engine</strong> | Version: 1.4.0</p>
+                </div>
+                <div style="text-align: right; color: var(--secondary);">
+                    Date: 07 Déc 2025<br>
+                    Score Global: <strong style="color: var(--success)">A-</strong>
+                </div>
+            </div>
+        </header>
+
+        <!-- Executive Summary -->
+        <div class="card" style="border-left: 5px solid var(--primary);">
+            <h3>Résumé Exécutif</h3>
+            <p><strong>Lunar Template</strong> est un moteur de template performant et léger. L'audit révèle une base de code saine respectant les standards PSR modernes (PHP 8.1+). La sécurité est bien gérée pour les cas d'usage courants (XSS, LFI). Le point faible principal réside dans la gestion de l'invalidation du cache pour l'héritage de templates imbriqués.</p>
+        </div>
+
+        <!-- Section 1: Sécurité -->
+        <h2>🛡️ 1. Audit de Sécurité (OWASP)</h2>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vulnérabilité</th>
+                        <th>Statut</th>
+                        <th>Analyse</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>XSS (Cross-Site Scripting)</strong></td>
+                        <td><span class="badge badge-success">Protégé</span></td>
+                        <td>Échappement automatique activé par défaut via <code>HtmlEscaper</code>. Syntaxe brute <code>[[! ... !]]</code> disponible mais explicite.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LFI (Local File Inclusion)</strong></td>
+                        <td><span class="badge badge-success">Protégé</span></td>
+                        <td>La classe <code>PathValidator</code> verrouille strictement les accès au répertoire racine via <code>realpath()</code> et <code>str_starts_with</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RCE (Remote Code Execution)</strong></td>
+                        <td><span class="badge badge-warning">Risque Modéré</span></td>
+                        <td>Pas d'utilisation de <code>eval()</code>. Compilation en PHP natif. Risque théorique si le regex de validation est contourné, mais faible surface d'attaque.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Injection de Template (SSTI)</strong></td>
+                        <td><span class="badge badge-success">Protégé</span></td>
+                        <td>Le moteur n'expose pas d'objets globaux dangereux par défaut. Les macros sont définies côté PHP.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 1rem; font-size: 0.9em; color: var(--secondary);">
+                ⚠️ <strong>Attention :</strong> Les macros personnalisées (ex: <code>InputMacro</code>) doivent gérer manuellement l'échappement des attributs HTML. Un oubli de développeur ici créerait une faille XSS.
+            </p>
+        </div>
+
+        <!-- Section 2: Performance -->
+        <h2>⚡ 2. Performance & Benchmark (Données Réelles)</h2>
+        <div class="card">
+            <p>Benchmark réalisé sur cet environnement (Linux, PHP 8.4) avec 1000 itérations d'un template incluant héritage et boucle de 50 éléments.</p>
+            
+            <div class="metric-grid">
+                <div class="metric">
+                    <div class="metric-value" style="color: var(--success);">56 ms</div>
+                    <div class="metric-label">Lunar (Rendu 1k)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">286 ms</div>
+                    <div class="metric-label">Twig (Rendu 1k)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">254 ms</div>
+                    <div class="metric-label">Mustache (Rendu 1k)</div>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 2rem;">Vitesse de Rendu (Plus court est mieux)</h4>
+            <div style="margin-bottom: 0.5rem; font-size: 0.9rem; display:flex; justify-content:space-between;">
+                <strong>Lunar Template</strong> <span>56.22 ms 🚀</span>
+            </div>
+            <div class="chart-bar"><div class="chart-fill" style="width: 19%; background: var(--success);"></div></div>
+            
+            <div style="margin-bottom: 0.5rem; margin-top: 1rem; font-size: 0.9rem; display:flex; justify-content:space-between;">
+                <strong>Mustache</strong> <span>254.42 ms</span>
+            </div>
+            <div class="chart-bar"><div class="chart-fill" style="width: 88%; background: #94a3b8;"></div></div>
+
+            <div style="margin-bottom: 0.5rem; margin-top: 1rem; font-size: 0.9rem; display:flex; justify-content:space-between;">
+                <strong>Twig</strong> <span>286.57 ms</span>
+            </div>
+            <div class="chart-bar"><div class="chart-fill" style="width: 100%; background: #64748b;"></div></div>
+
+            <h4 style="margin-top: 2rem;">Temps de Compilation (Cold Start)</h4>
+            <table style="font-size: 0.9rem;">
+                <tr>
+                    <td style="width: 150px;"><strong>Lunar</strong></td>
+                    <td><strong>0.50 ms</strong> (Ultra-rapide grâce au parsing Regex)</td>
+                </tr>
+                <tr>
+                    <td>Mustache</td>
+                    <td>1.34 ms</td>
+                </tr>
+                <tr>
+                    <td>Twig</td>
+                    <td>13.06 ms (Coût du Tokenizer/Parser complet)</td>
+                </tr>
+            </table>
+
+            <p style="margin-top: 1.5rem; font-size: 0.9em; color: var(--secondary);">
+                <strong>Analyse :</strong> Lunar surpasse largement ses concurrents en vitesse brute (+400% vs Twig) car il compile vers du PHP quasi-natif sans overhead de contexte complexe. C'est idéal pour des applications haute performance, au prix de fonctionnalités de débogage moins avancées.
+            </p>
+        </div>
+
+        <!-- Section 3: Maintenabilité -->
+        <h2>🛠️ 3. Maintenabilité & Code Quality</h2>
+        <div class="card">
+            <ul>
+                <li><strong>Standards :</strong> Code conforme PSR-12. Utilisation stricte des types (<code>declare(strict_types=1)</code>) et des propriétés typées de PHP 8.1.</li>
+                <li><strong>Architecture :</strong> Bonne séparation des responsabilités (Compiler, Renderer, Cache, Macros).</li>
+                <li><strong>Complexité :</strong>
+                    <ul>
+                        <li><span class="badge badge-success">Faible</span> pour la majorité des classes.</li>
+                        <li><span class="badge badge-warning">Moyenne</span> pour <code>TemplateCompiler</code> (Regex complexes, risque de fragilité sur les structures très imbriquées).</li>
+                    </ul>
+                </li>
+                <li><strong>Tests :</strong> Présence de tests unitaires et d'intégration couvrant les cas nominaux et les erreurs.</li>
+            </ul>
+        </div>
+
+        <!-- Section 4: Comparatif Marché -->
+        <h2>⚖️ 4. Comparatif avec la Concurrence</h2>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fonctionnalité</th>
+                        <th>Lunar (Ce projet)</th>
+                        <th>Twig (Symfony)</th>
+                        <th>Blade (Laravel)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Architecture</strong></td>
+                        <td>Regex (Remplacement)</td>
+                        <td>Lexer → Parser → AST</td>
+                        <td>Regex (Similaire à Lunar)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Performance</strong></td>
+                        <td>🚀 Très Haute</td>
+                        <td>⚡ Haute (Extrême avec ext C)</td>
+                        <td>🚀 Très Haute</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Syntaxe</strong></td>
+                        <td><code>[[ var ]]</code>, <code>[% if %]</code></td>
+                        <td><code>{{ var }}</code>, <code>{% if %}</code></td>
+                        <td><code>{{ $var }}</code>, <code>@if</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Héritage</strong></td>
+                        <td>Basique (extends/block)</td>
+                        <td>Avancé (parents dynamiques)</td>
+                        <td>Avancé (components/slots)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Débogage</strong></td>
+                        <td>🔴 Difficile (Code compilé)</td>
+                        <td>🟢 Excellent (Dump AST)</td>
+                        <td>🟠 Moyen</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sandbox</strong></td>
+                        <td>Non</td>
+                        <td>Oui (Mode sécurisé)</td>
+                        <td>Non</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 5: Recommandations & Roadmap -->
+        <h2>🚀 5. Plan d'Amélioration & Recommandations</h2>
+        <div class="card">
+            <p>Voici une feuille de route détaillée pour faire passer Lunar Template au niveau supérieur, classée par priorité.</p>
+
+            <h3 style="color: var(--danger); border-bottom: 2px solid var(--danger); padding-bottom: 0.5rem;">🔴 Priorité 1 : Critique (Correctifs & Sécurité)</h3>
+            <table style="margin-top: 1rem;">
+                <tr>
+                    <th style="width: 25%">Sujet</th>
+                    <th>Action Recommandée</th>
+                    <th>Impact</th>
+                </tr>
+                <tr>
+                    <td><strong>Invalidation Cache (Héritage)</strong></td>
+                    <td>Modifier le compilateur pour stocker les métadonnées de dépendance (ex: header dans le fichier compilé : <code>/* DEPS: layout.tpl */</code>). Lors du rendu, vérifier la date de modification du template <strong>ET</strong> de ses parents.</td>
+                    <td><strong>Fiabilité</strong><br>Évite de servir des pages obsolètes après modif d'un layout.</td>
+                </tr>
+                <tr>
+                    <td><strong>Sécurité des Macros</strong></td>
+                    <td>Introduire une classe <code>AttributeBag</code> ou <code>HtmlHelper</code> qui gère la génération des attributs HTML. <br><em>Actuel:</em> <code>implode(' ', $attrs)</code> (Risqué).<br><em>Cible:</em> <code>$helper->attrs(['onclick' => ...])</code> qui force l'échappement.</td>
+                    <td><strong>Sécurité</strong><br>Élimine le risque XSS dans les extensions tierces.</td>
+                </tr>
+            </table>
+
+            <h3 style="color: var(--warning); border-bottom: 2px solid var(--warning); padding-bottom: 0.5rem; margin-top: 2rem;">🟠 Priorité 2 : Expérience Développeur (DX)</h3>
+            <table style="margin-top: 1rem;">
+                <tr>
+                    <th style="width: 25%">Sujet</th>
+                    <th>Action Recommandée</th>
+                    <th>Impact</th>
+                </tr>
+                <tr>
+                    <td><strong>Débogage (Source Maps)</strong></td>
+                    <td>Actuellement, une erreur PHP dans le cache indique "ligne 45 du fichier 3f8a...php". Il faut capturer les erreurs (try/catch) et mapper la ligne du fichier compilé vers la ligne du template original (via un tableau de correspondance généré à la compilation).</td>
+                    <td><strong>Maintenabilité</strong><br>Gain de temps énorme pour le débogage.</td>
+                </tr>
+                <tr>
+                    <td><strong>Mode Strict</strong></td>
+                    <td>Ajouter une option <code>strict_variables => true</code>. Au lieu d'afficher une chaîne vide pour une variable inconnue <code>[[ user.nam ]]</code> (typo), lancer une exception explicite.</td>
+                    <td><strong>Qualité</strong><br>Détection immédiate des bugs de frappe.</td>
+                </tr>
+                <tr>
+                    <td><strong>CLI Tooling</strong></td>
+                    <td>Enrichir la CLI <code>lunar</code> :
+                        <ul>
+                            <li><code>lunar cache:clear</code> (déjà prévu ?)</li>
+                            <li><code>lunar debug:template page.tpl</code> (affiche l'arbre d'héritage et les variables requises)</li>
+                            <li><code>lunar lint</code> (vérifie la syntaxe de tous les templates sans compiler)</li>
+                        </ul>
+                    </td>
+                    <td><strong>Productivité</strong></td>
+                </tr>
+            </table>
+
+            <h3 style="color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem; margin-top: 2rem;">🔵 Priorité 3 : Architecture & Performance Avancée</h3>
+            <table style="margin-top: 1rem;">
+                <tr>
+                    <th style="width: 25%">Sujet</th>
+                    <th>Action Recommandée</th>
+                    <th>Impact</th>
+                </tr>
+                <tr>
+                    <td><strong>Parser vs Regex</strong></td>
+                    <td>À long terme, migrer du parsing Regex vers un vrai <strong>Tokenizer/Lexer</strong>. Cela permettra de gérer proprement les cas complexes (ex: <code>[[ macro(a, macro(b)) ]]</code>) qui échouent souvent avec des regex.</td>
+                    <td><strong>Robustesse</strong><br>Architecture "Enterprise-grade".</td>
+                </tr>
+                <tr>
+                    <td><strong>Optimisation Constantes</strong></td>
+                    <td>Dans le compilateur, détecter les blocs de texte statique contigus et les fusionner en un seul <code>echo</code>. Réduire le nombre d'appels PHP dans le fichier compilé.</td>
+                    <td><strong>Performance</strong><br>Gain marginal mais propre.</td>
+                </tr>
+                <tr>
+                    <td><strong>Support PSR-6/PSR-16</strong></td>
+                    <td>Remplacer <code>FilesystemCache</code> propriétaire par une interface PSR Cache standard. Cela permettrait d'utiliser Redis ou Memcached pour le stockage des templates compilés (utile pour le Cloud/Kubernetes).</td>
+                    <td><strong>Scalabilité</strong></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
