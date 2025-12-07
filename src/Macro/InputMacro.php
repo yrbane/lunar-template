@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Macro;
 
+use Lunar\Template\Html\AttributeBag;
+
 /**
  * Generate HTML input element.
  *
@@ -11,7 +13,8 @@ namespace Lunar\Template\Macro;
  * - ##input("email")## - Email input
  * - ##input("password", "password")## - Password input
  * - ##input("username", "text", "john")## - With value
- * - ##input("age", "number", "", "min=0 max=120")## - With attributes
+ * - ##input("age", "number", "", ["min" => 0, "max" => 120])## - With secure attributes
+ * - ##input("age", "number", "", "min=0 max=120")## - With legacy attributes (raw string)
  */
 final class InputMacro implements MacroInterface
 {
@@ -25,31 +28,36 @@ final class InputMacro implements MacroInterface
         $name = (string) ($args[0] ?? '');
         $type = (string) ($args[1] ?? 'text');
         $value = (string) ($args[2] ?? '');
-        $attrs = (string) ($args[3] ?? '');
+        $extra = $args[3] ?? [];
         $class = (string) ($args[4] ?? '');
 
         if ($name === '') {
             return '';
         }
 
-        $attributes = [
-            'type="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '"',
-            'name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '"',
-            'id="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '"',
-        ];
+        $bag = new AttributeBag([
+            'type' => $type,
+            'name' => $name,
+            'id' => $name,
+        ]);
 
         if ($value !== '') {
-            $attributes[] = 'value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"';
+            $bag->add('value', $value);
         }
 
         if ($class !== '') {
-            $attributes[] = 'class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '"';
+            $bag->add('class', $class);
         }
 
-        if ($attrs !== '') {
-            $attributes[] = $attrs;
+        $legacyString = '';
+        if (is_array($extra)) {
+            foreach ($extra as $key => $val) {
+                $bag->add((string) $key, $val);
+            }
+        } elseif (is_string($extra) && $extra !== '') {
+            $legacyString = ' ' . $extra;
         }
 
-        return '<input ' . implode(' ', $attributes) . '>';
+        return '<input ' . $bag . $legacyString . '>';
     }
 }

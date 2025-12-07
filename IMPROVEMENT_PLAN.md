@@ -29,15 +29,16 @@ Il faut modifier le compilateur pour extraire la liste des dépendances (parents
 ### [IMP-02] Sécurisation des attributs de Macros (AttributeBag)
 **Type** : Sécurité
 **Complexité** : Moyenne (3/5)
+**Statut** : ✅ Terminé (07/12/2025)
 **Description** :
 Les macros actuelles (ex: `InputMacro`) concatènent des chaînes HTML manuellement (`class="' . $class . '"`). Un oubli d'échappement crée une faille XSS.
 Il faut créer une classe utilitaire `AttributeBag` ou `HtmlHelper` qui accepte un tableau d'attributs et génère la chaîne HTML en forçant l'échappement via `htmlspecialchars`.
 
 **Critères d'Acceptation** :
-- [ ] Création de la classe `Lunar\Template\Html\AttributeBag`.
-- [ ] Refactoring de `InputMacro` pour utiliser `AttributeBag`.
-- [ ] Test unitaire : Vérifier que `AttributeBag` échappe correctement les guillemets et caractères spéciaux.
-- [ ] Les macros existantes continuent de fonctionner à l'identique.
+- [x] Création de la classe `Lunar\Template\Html\AttributeBag`.
+- [x] Refactoring de `InputMacro` pour utiliser `AttributeBag`.
+- [x] Test unitaire : Vérifier que `AttributeBag` échappe correctement les guillemets et caractères spéciaux.
+- [x] Les macros existantes continuent de fonctionner à l'identique.
 
 ---
 
