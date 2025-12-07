@@ -276,7 +276,29 @@ class TemplateRenderer implements RendererInterface
             return true;
         }
 
-        return filemtime($compiledFile) < filemtime($templateFile);
+        if (filemtime($compiledFile) < filemtime($templateFile)) {
+            return true;
+        }
+
+        // Check dependencies (parents)
+        $handle = fopen($compiledFile, 'r');
+        if ($handle) {
+            $line = fgets($handle);
+            fclose($handle);
+
+            if ($line !== false && str_starts_with($line, '<?php /* DEPENDENCIES: ')) {
+                $depsString = substr($line, 23, strpos($line, ' */') - 23);
+                $dependencies = explode(';', $depsString);
+
+                foreach ($dependencies as $dep) {
+                    if ($dep !== '' && file_exists($dep) && filemtime($compiledFile) < filemtime($dep)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -291,25 +313,39 @@ class TemplateRenderer implements RendererInterface
             // @codeCoverageIgnoreEnd
         }
 
-        $source = $this->processExtends($source);
+        $dependencies = [];
+        $source = $this->processExtends($source, $dependencies);
         $compiled = $this->compiler->compile($source);
 
-        file_put_contents($compiledFile, $compiled);
+        $header = '';
+        if (!empty($dependencies)) {
+            $header = '<?php /* DEPENDENCIES: ' . implode(';', $dependencies) . ' */ ?>' . PHP_EOL;
+        }
+
+        file_put_contents($compiledFile, $header . $compiled);
     }
 
     /**
      * Process template inheritance.
+     *
+     * @param array<string> $dependencies
      */
-    private function processExtends(string $source): string
+    private function processExtends(string $source, array &$dependencies = []): string
     {
         if (preg_match('/\[%\s*extends\s+[\'"](.+?)[\'"]\s*%\]/', $source, $matches)) {
             $parentTemplate = $matches[1];
+            
             $source = (string) preg_replace('/\[%\s*extends\s+[\'"](.+?)[\'"]\s*%\]/', '', $source);
             $blocks = $this->extractBlocks($source);
 
             $parentFile = $this->resolveTemplatePath($parentTemplate);
             if (!file_exists($parentFile)) {
                 throw TemplateException::parentTemplateNotFound($parentFile);
+            }
+
+            // Add to dependencies
+            if (!in_array($parentFile, $dependencies, true)) {
+                $dependencies[] = $parentFile;
             }
 
             $parentSource = file_get_contents($parentFile);
@@ -320,7 +356,7 @@ class TemplateRenderer implements RendererInterface
             }
 
             // Recursively process parent extends
-            $parentSource = $this->processExtends($parentSource);
+            $parentSource = $this->processExtends($parentSource, $dependencies);
 
             return (string) preg_replace_callback(
                 '/\[%\s*block\s+(\w+)\s*%\](.*?)\[%\s*endblock\s*%\]/s',

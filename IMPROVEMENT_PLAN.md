@@ -15,15 +15,16 @@ Ce document détaille la feuille de route pour implémenter les recommandations 
 ### [IMP-01] Correction de l'invalidation du cache d'héritage
 **Type** : Bugfix / Architecture
 **Complexité** : Élevée (5/5)
+**Statut** : ✅ Terminé (07/12/2025)
 **Description** :
 Actuellement, le système de cache ne vérifie que la date de modification du fichier template appelé (ex: `page.tpl`). Si ce template étend un parent (ex: `layout.tpl`), et que le parent est modifié, `page.tpl` n'est pas recompilé, servant une version obsolète.
 Il faut modifier le compilateur pour extraire la liste des dépendances (parents) et les stocker (soit dans le fichier compilé, soit dans un fichier méta séparé). Le Renderer doit vérifier ces dépendances avant de servir le cache.
 
 **Critères d'Acceptation** :
-- [ ] Le compilateur détecte tous les `[% extends "..." %]` et stocke ces chemins.
-- [ ] `TemplateRenderer::needsCompilation` vérifie récursivement la date de modification des parents.
-- [ ] Test d'intégration : Rendre `page.tpl`, modifier `layout.tpl`, rendre `page.tpl` -> le contenu doit changer.
-- [ ] Pas de régression de performance majeure sur le "Warm Run" (vérification rapide des mtimes).
+- [x] Le compilateur détecte tous les `[% extends "..." %]` et stocke ces chemins.
+- [x] `TemplateRenderer::needsCompilation` vérifie récursivement la date de modification des parents.
+- [x] Test d'intégration : Rendre `page.tpl`, modifier `layout.tpl`, rendre `page.tpl` -> le contenu doit changer.
+- [x] Pas de régression de performance majeure sur le "Warm Run" (vérification rapide des mtimes).
 
 ### [IMP-02] Sécurisation des attributs de Macros (AttributeBag)
 **Type** : Sécurité

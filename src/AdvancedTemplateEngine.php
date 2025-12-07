@@ -121,16 +121,51 @@ class AdvancedTemplateEngine
 
         $compiledFile = $this->cachePath . '/' . md5($templateFile) . '.php';
 
+        // Vérification de la nécessité de compiler
+        $needsCompilation = false;
+
+        if (!file_exists($compiledFile)) {
+            $needsCompilation = true;
+        } elseif (filemtime($compiledFile) < filemtime($templateFile)) {
+            $needsCompilation = true;
+        } else {
+            // Vérification des dépendances (parents)
+            $handle = fopen($compiledFile, 'r');
+            if ($handle) {
+                $line = fgets($handle);
+                fclose($handle);
+
+                if ($line !== false && str_starts_with($line, '<?php /* DEPENDENCIES: ')) {
+                    $depsString = substr($line, 23, strpos($line, ' */') - 23);
+                    $dependencies = explode(';', $depsString);
+
+                    foreach ($dependencies as $dep) {
+                        if ($dep !== '' && file_exists($dep) && filemtime($compiledFile) < filemtime($dep)) {
+                            $needsCompilation = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         // Si le template compilé n'existe pas ou est périmé, le recompiler.
-        if (!file_exists($compiledFile) || filemtime($compiledFile) < filemtime($templateFile)) {
+        if ($needsCompilation) {
             $source = file_get_contents($templateFile);
             if ($source === false) {
                 // @codeCoverageIgnoreStart
                 throw TemplateException::unableToReadTemplate($templateFile);
                 // @codeCoverageIgnoreEnd
             }
-            $compiled = $this->compileTemplate($source);
-            file_put_contents($compiledFile, $compiled);
+            $dependencies = [];
+            $compiled = $this->compileTemplate($source, $dependencies);
+            
+            $header = '';
+            if (!empty($dependencies)) {
+                $header = '<?php /* DEPENDENCIES: ' . implode(';', $dependencies) . ' */ ?>' . PHP_EOL;
+            }
+            
+            file_put_contents($compiledFile, $header . $compiled);
         }
 
         // Merge avec les variables par defaut
@@ -211,13 +246,14 @@ class AdvancedTemplateEngine
      * Compile le template source en code PHP.
      *
      * @param string $source contenu du template source
+     * @param array<string> $dependencies liste des dépendances (fichiers parents)
      *
      * @return string code PHP généré
      */
-    protected function compileTemplate(string $source): string
+    protected function compileTemplate(string $source, array &$dependencies = []): string
     {
         // Traitement de l'héritage (extends et blocs)
-        $source = $this->processExtends($source);
+        $source = $this->processExtends($source, $dependencies);
 
         // Conversion des variables [[ ... ]] en affichage PHP sécurisé.
         $source = preg_replace_callback('/\[\[\s*(.*?)\s*\]\]/', function ($matches) {
@@ -278,12 +314,13 @@ class AdvancedTemplateEngine
      * Gère l'héritage de templates.
      *
      * @param string $source contenu du template enfant
+     * @param array<string> $dependencies liste des dépendances (fichiers parents)
      *
      * @throws Exception si le template parent n'existe pas
      *
      * @return string contenu final après fusion avec le template parent
      */
-    protected function processExtends(string $source): string
+    protected function processExtends(string $source, array &$dependencies = []): string
     {
         if (preg_match('/\[%\s*extends\s+[\'"](.+?)[\'"]\s*%\]/', $source, $matches)) {
             $parentTemplate = $matches[1];
@@ -293,12 +330,19 @@ class AdvancedTemplateEngine
             if (!file_exists($parentFile)) {
                 throw TemplateException::parentTemplateNotFound($parentFile);
             }
+
+            if (!in_array($parentFile, $dependencies, true)) {
+                $dependencies[] = $parentFile;
+            }
+
             $parentSource = file_get_contents($parentFile);
             if ($parentSource === false) {
                 // @codeCoverageIgnoreStart
                 throw TemplateException::unableToReadTemplate($parentFile);
                 // @codeCoverageIgnoreEnd
             }
+
+            $parentSource = $this->processExtends($parentSource, $dependencies);
 
             return preg_replace_callback('/\[%\s*block\s+(\w+)\s*%\](.*?)\[%\s*endblock\s*%\]/s', function ($matches) use ($blocks) {
                 $blockName = $matches[1];
