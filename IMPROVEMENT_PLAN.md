@@ -63,14 +63,16 @@ Ajouter une option de configuration `strict_variables` (bool). Si true, lancer u
 ### [IMP-04] Source Maps pour le débogage (Basic)
 **Type** : Feature
 **Complexité** : Moyenne (3/5)
+**Statut** : ✅ Terminé (07/12/2025)
 **Description** :
 Les erreurs PHP (ex: appel de méthode sur null) se produisent dans le fichier compilé (`/cache/hash.php:45`). Le développeur ne sait pas à quelle ligne du `.tpl` cela correspond.
 Il faut capturer les erreurs fatales/exceptions lors du `include` du template compilé, et essayer de mapper la ligne PHP vers la ligne du template original (via une table de correspondance générée lors de la compilation ou une approximation).
 
 **Critères d'Acceptation** :
-- [ ] Le compilateur génère des commentaires `/* LINE:12 */` ou une map.
-- [ ] `TemplateRenderer` capture les `Throwable`.
-- [ ] L'exception relancée contient le message "Error in template.tpl at line X".
+- [x] Le compilateur injecte des marqueurs `/* LUNAR_LINE:X:/path/to/file.tpl */` dans le code compilé.
+- [x] `AdvancedTemplateEngine::render` intercepte les `Throwable`.
+- [x] L'exception relancée est une `TemplateException` dont le message contient le nom du template et le numéro de ligne original.
+- [x] Le test unitaire `SourceMapTest` passe.
 
 ---
 

@@ -161,7 +161,7 @@ class AdvancedTemplateEngine
                 // @codeCoverageIgnoreEnd
             }
             $dependencies = [];
-            $compiled = $this->compileTemplate($source, $dependencies);
+            $compiled = $this->compileTemplate($source, $dependencies, $templateFile);
             
             $header = '';
             if (!empty($dependencies)) {
@@ -183,11 +183,40 @@ class AdvancedTemplateEngine
 
         try {
             include $compiledFile;
-
         } catch (Throwable $e) {
             ob_end_clean();
 
-            throw $e;
+            // Debug: Inspect the caught exception
+            file_put_contents('/tmp/debug_lunar_exception.txt', sprintf("Exception: %s (%s) in %s:%d\n", $e->getMessage(), get_class($e), $e->getFile(), $e->getLine()), FILE_APPEND);
+
+            // Source Map Logic
+            $originalLine = null;
+            $originalFile = $templateFile; // Default to the main template file
+            
+            // Si l'erreur provient du fichier compilé
+            if ($e->getFile() === $compiledFile) {
+                $compiledFileContent = file($compiledFile); // Lire le fichier compilé ligne par ligne
+                if ($compiledFileContent !== false) {
+                    $errorLineInCompiled = $e->getLine();
+                    // Remonter pour trouver le dernier marqueur #LUNAR_LINE avant la ligne d'erreur
+                    for ($i = $errorLineInCompiled - 1; $i >= 0; $i--) {
+                        if (isset($compiledFileContent[$i]) && preg_match('#/\* LUNAR_LINE:(\d+):(.*?) \*/#', $compiledFileContent[$i], $matches)) {
+                            $originalLine = (int) $matches[1];
+                            $originalFile = $matches[2];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $errorMessage = sprintf(
+                'Error in template "%s" at line %s: %s',
+                basename($originalFile), // Nom de fichier simple
+                $originalLine ?? $e->getLine(), // Utiliser la ligne originale si trouvée
+                $e->getMessage()
+            );
+
+            throw new TemplateException($errorMessage, 0, $e);
         }
 
         return (string) ob_get_clean();
@@ -250,13 +279,23 @@ class AdvancedTemplateEngine
      *
      * @param string $source contenu du template source
      * @param array<string> $dependencies liste des dépendances (fichiers parents)
+     * @param string $templateFilePath Chemin absolu du template original (pour la source map)
      *
      * @return string code PHP généré
      */
-    protected function compileTemplate(string $source, array &$dependencies = []): string
+    protected function compileTemplate(string $source, array &$dependencies = [], string $templateFilePath = ''): string
     {
         // Traitement de l'héritage (extends et blocs)
         $source = $this->processExtends($source, $dependencies);
+
+        $sourceWithLineMarkers = [];
+        $sourceLines = explode("\n", $source);
+        foreach ($sourceLines as $lineNum => $originalLine) {
+            // Ajouter un marqueur de source map au début de chaque ligne compilée
+            // Le marqueur inclut le numéro de ligne original et le chemin du fichier pour le débogage
+            $sourceWithLineMarkers[] = '/* LUNAR_LINE:' . ($lineNum + 1) . ':' . $templateFilePath . ' */' . $originalLine;
+        }
+        $source = implode("\n", $sourceWithLineMarkers);
 
         // Conversion des variables [[ ... ]] en affichage PHP sécurisé.
         $source = preg_replace_callback('/\[\[\s*(.*?)\s*\]\]/', function ($matches) {

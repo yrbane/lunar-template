@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Lunar\Template\Cache;
 
 use Lunar\Template\Exception\TemplateException;
+use Lunar\Template\Cache\CacheStorageInterface;
 
 /**
- * Filesystem-based template cache.
+ * Filesystem-based template cache storage.
  */
-class FilesystemCache implements CacheInterface
+class FilesystemCache implements CacheStorageInterface
 {
     private string $directory;
 
@@ -21,20 +22,6 @@ class FilesystemCache implements CacheInterface
         $this->extension = $extension;
 
         $this->ensureDirectoryExists();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function has(string $key, int $sourceModifiedTime): bool
-    {
-        $path = $this->getFilePath($key);
-
-        if (!file_exists($path)) {
-            return false;
-        }
-
-        return filemtime($path) >= $sourceModifiedTime;
     }
 
     /**
@@ -88,16 +75,6 @@ class FilesystemCache implements CacheInterface
                 unlink($file);
             }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getPath(string $key): ?string
-    {
-        $path = $this->getFilePath($key);
-
-        return file_exists($path) ? $path : null;
     }
 
     /**

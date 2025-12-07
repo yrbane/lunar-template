@@ -28,6 +28,8 @@ class SourceMapTest extends TestCase
         $this->removeDirectory($this->cacheDir);
     }
 
+
+
     public function testExceptionMapsToOriginalTemplateLine(): void
     {
         $templateContent = <<<'TPL'
@@ -41,10 +43,13 @@ TPL;
         $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
         $engine->setStrictVariables(true); // Ensure undefined access is caught
 
-        $this->expectException(TemplateException::class);
-        $this->expectExceptionMessage('Error in template "error.tpl" at line 3: Undefined variable "undefined.method()" in strict mode.');
-
-        $engine->render('error');
+        try {
+            $engine->render('error');
+            $this->fail('TemplateException was not thrown.');
+        } catch (TemplateException $e) {
+            $expectedMessagePart = 'Error in template "error.tpl" at line 3: Undefined variable "undefined.method()" in strict mode.';
+            $this->assertStringContainsString($expectedMessagePart, $e->getMessage());
+        }
     }
 
     private function removeDirectory(string $dir): void

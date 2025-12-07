@@ -31,6 +31,7 @@
     "require": {
         "php": ">=8.3",
         "ext-mbstring": "*",
+        "psr/simple-cache": "^3.0",
         "yrbane/lunar-cli": "@dev",
         "yrbane/lunar-config": "@dev"
     },
