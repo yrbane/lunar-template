@@ -24,8 +24,10 @@ class StrictVariableTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->removeDirectory($this->templateDir);
-        $this->removeDirectory($this->cacheDir);
+        // Debug: Keep files for inspection
+        echo "\nDEBUG: Cache Dir: " . $this->cacheDir . "\n";
+        // $this->removeDirectory($this->templateDir);
+        // $this->removeDirectory($this->cacheDir);
     }
 
     public function testUndefinedVariableThrowsExceptionInStrictMode(): void

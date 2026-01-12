@@ -94,6 +94,14 @@ class FilesystemCache implements CacheStorageInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function getCompiledFilePath(string $key): string
+    {
+        return $this->getFilePath($key);
+    }
+
+    /**
      * Ensure cache directory exists.
      */
     private function ensureDirectoryExists(): void

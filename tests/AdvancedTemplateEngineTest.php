@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lunar\Template\Tests;
 
 use Lunar\Template\AdvancedTemplateEngine;
+use Lunar\Template\Cache\FilesystemCache;
 use Lunar\Template\Exception\TemplateException;
 use Lunar\Template\Macro\MacroInterface;
 use PHPUnit\Framework\TestCase;
@@ -25,7 +26,8 @@ class AdvancedTemplateEngineTest extends TestCase
 
         mkdir($this->templatesDir, 0o755, true);
 
-        $this->engine = new AdvancedTemplateEngine($this->templatesDir, $this->cacheDir);
+        // Pass an explicit FilesystemCache instance
+        $this->engine = new AdvancedTemplateEngine($this->templatesDir, $this->cacheDir, new FilesystemCache($this->cacheDir));
     }
 
     protected function tearDown(): void
@@ -63,7 +65,7 @@ class AdvancedTemplateEngineTest extends TestCase
     public function testConstructorCreatesDirectories(): void
     {
         $this->assertTrue(is_dir($this->templatesDir));
-        $this->assertTrue(is_dir($this->cacheDir));
+        $this->assertTrue(is_dir($this->engine->cacheStorage->getDirectory()));
     }
 
     public function testConstructorThrowsExceptionForNonExistentTemplateDir(): void
@@ -71,7 +73,7 @@ class AdvancedTemplateEngineTest extends TestCase
         $this->expectException(TemplateException::class);
         $this->expectExceptionMessage('does not exist');
 
-        new AdvancedTemplateEngine('/non/existent/path', $this->cacheDir);
+        new AdvancedTemplateEngine('/non/existent/path', $this->cacheDir, null);
     }
 
     public function testConstructorThrowsExceptionForUnreadableTemplateDir(): void
@@ -83,7 +85,7 @@ class AdvancedTemplateEngineTest extends TestCase
         $this->expectExceptionMessage('is not readable');
 
         try {
-            new AdvancedTemplateEngine($unreadableDir, $this->cacheDir);
+            new AdvancedTemplateEngine($unreadableDir, $this->cacheDir, null);
         } finally {
             chmod($unreadableDir, 0o755);
             rmdir($unreadableDir);
@@ -597,7 +599,9 @@ class AdvancedTemplateEngineTest extends TestCase
             $this->expectException(TemplateException::class);
             $this->expectExceptionMessage('is not writable');
 
-            new AdvancedTemplateEngine($this->templatesDir, $readOnlyCacheDir);
+            // L'exception doit être levée par la tentative de création du FilesystemCache
+            // qui est ensuite passé au constructeur du moteur.
+            new AdvancedTemplateEngine($this->templatesDir, $readOnlyCacheDir, new FilesystemCache($readOnlyCacheDir));
         } finally {
             chmod($readOnlyCacheDir, 0o755);
             rmdir($readOnlyCacheDir);

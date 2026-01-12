@@ -659,6 +659,9 @@ class AdvancedTemplateEngine
             $expression = str_replace($key, $value, $expression);
         }
 
+        // Convertit 'not' en '!' (not n'est pas un opérateur PHP valide)
+        $expression = preg_replace('/\bnot\s+/', '! ', $expression);
+
         return $expression;
     }
 

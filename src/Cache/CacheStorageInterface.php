@@ -33,4 +33,20 @@ interface CacheStorageInterface
      * Deletes all items in the cache.
      */
     public function clear(): void;
+
+    /**
+     * Get the physical path where the compiled file for a given key is stored.
+     * This is specific for filesystem-based code caches.
+     *
+     * @param string $key
+     * @return string
+     */
+    public function getCompiledFilePath(string $key): string;
+
+    /**
+     * Get the base directory for the cache.
+     *
+     * @return string
+     */
+    public function getDirectory(): string;
 }
