@@ -161,7 +161,7 @@ class AdvancedTemplateEngine
                 // @codeCoverageIgnoreEnd
             }
             $dependencies = [];
-            $compiled = $this->compileTemplate($source, $dependencies, $templateFile);
+            $compiled = $this->compileTemplate($source, $dependencies, $templateFile); // <<-- templateFile pour la source map
             
             $header = '';
             if (!empty($dependencies)) {
@@ -186,29 +186,11 @@ class AdvancedTemplateEngine
         } catch (Throwable $e) {
             ob_end_clean();
 
-            // Debug: Inspect the caught exception
-            file_put_contents('/tmp/debug_lunar_exception.txt', sprintf("Exception: %s (%s) in %s:%d\n", $e->getMessage(), get_class($e), $e->getFile(), $e->getLine()), FILE_APPEND);
-
-            // Source Map Logic
+            // Source Map Logic (à implémenter)
             $originalLine = null;
-            $originalFile = $templateFile; // Default to the main template file
+            $originalFile = $templateFile;
+            // ...
             
-            // Si l'erreur provient du fichier compilé
-            if ($e->getFile() === $compiledFile) {
-                $compiledFileContent = file($compiledFile); // Lire le fichier compilé ligne par ligne
-                if ($compiledFileContent !== false) {
-                    $errorLineInCompiled = $e->getLine();
-                    // Remonter pour trouver le dernier marqueur #LUNAR_LINE avant la ligne d'erreur
-                    for ($i = $errorLineInCompiled - 1; $i >= 0; $i--) {
-                        if (isset($compiledFileContent[$i]) && preg_match('#/\* LUNAR_LINE:(\d+):(.*?) \*/#', $compiledFileContent[$i], $matches)) {
-                            $originalLine = (int) $matches[1];
-                            $originalFile = $matches[2];
-                            break;
-                        }
-                    }
-                }
-            }
-
             $errorMessage = sprintf(
                 'Error in template "%s" at line %s: %s',
                 basename($originalFile), // Nom de fichier simple
@@ -266,12 +248,64 @@ class AdvancedTemplateEngine
 
         // Si c'est un callable de type [object, 'execute'] (MacroInterface),
         // on passe le tableau d'arguments directement
-        if (\is_array($callback) && isset($callback[0]) && $callback[0] instanceof MacroInterface) {
+        if (is_array($callback) && isset($callback[0]) && $callback[0] instanceof MacroInterface) {
             return $callback[0]->execute($args);
         }
 
         // Pour les closures, on spread les arguments
         return $callback(...$args);
+    }
+
+    /**
+     * Protège le contenu des balises script et style du parsing template.
+     *
+     * @param string $source contenu du template
+     * @param array<string, string> $protected tableau pour stocker le contenu protégé
+     *
+     * @return string source avec placeholders
+     */
+    protected function protectScriptAndStyleContent(string $source, array &$protected): string
+    {
+        $index = 0;
+
+        // Protéger le contenu des balises <script>...</script>
+        $source = preg_replace_callback(
+            '/<script\b[^>]*>(.*?)<\/script>/is',
+            function ($match) use (&$protected, &$index) {
+                $placeholder = '___PROTECTED_SCRIPT_' . $index++ . '___';
+                $protected[$placeholder] = $match[0];
+
+                return $placeholder;
+            },
+            $source
+        );
+
+        // Protéger le contenu des balises <style>...</style>
+        $source = preg_replace_callback(
+            '/<style\b[^>]*>(.*?)<\/style>/is',
+            function ($match) use (&$protected, &$index) {
+                $placeholder = '___PROTECTED_STYLE_' . $index++ . '___';
+                $protected[$placeholder] = $match[0];
+
+                return $placeholder;
+            },
+            $source
+        );
+
+        return $source;
+    }
+
+    /**
+     * Restaure le contenu protégé des balises script et style.
+     *
+     * @param string $source contenu compilé avec placeholders
+     * @param array<string, string> $protected tableau du contenu protégé
+     *
+     * @return string source avec contenu restauré
+     */
+    protected function restoreScriptAndStyleContent(string $source, array $protected): string
+    {
+        return strtr($source, $protected);
     }
 
     /**
@@ -283,19 +317,14 @@ class AdvancedTemplateEngine
      *
      * @return string code PHP généré
      */
-    protected function compileTemplate(string $source, array &$dependencies = [], string $templateFilePath = ''): string
+    protected function compileTemplate(string $source, array & $dependencies = [], string $templateFilePath = ''): string
     {
+        // Protéger le contenu des balises <script> et <style> du parsing
+        $protectedContent = [];
+        $source = $this->protectScriptAndStyleContent($source, $protectedContent);
+
         // Traitement de l'héritage (extends et blocs)
         $source = $this->processExtends($source, $dependencies);
-
-        $sourceWithLineMarkers = [];
-        $sourceLines = explode("\n", $source);
-        foreach ($sourceLines as $lineNum => $originalLine) {
-            // Ajouter un marqueur de source map au début de chaque ligne compilée
-            // Le marqueur inclut le numéro de ligne original et le chemin du fichier pour le débogage
-            $sourceWithLineMarkers[] = '/* LUNAR_LINE:' . ($lineNum + 1) . ':' . $templateFilePath . ' */' . $originalLine;
-        }
-        $source = implode("\n", $sourceWithLineMarkers);
 
         // Conversion des variables [[ ... ]] en affichage PHP sécurisé.
         $source = preg_replace_callback('/\[\[\s*(.*?)\s*\]\]/', function ($matches) {
@@ -314,15 +343,15 @@ class AdvancedTemplateEngine
             $phpCode .= 'if ($engine->isStrictMode()) { ';
             // Vérifier si la variable finale est UNDEFINED
             $phpCode .= '    if (!isset(' . $phpVar . ')) { ';
-            $phpCode .= '        throw new Lunar\\Template\\Exception\\TemplateException(sprintf("Undefined variable \\"%s\\" in strict mode.", \'' . $expression . '\')); ';
+            $phpCode .= '        throw new Lunar\Template\Exception\TemplateException(sprintf("Undefined variable \"%s\" in strict mode.", \''. $expression . '\')); ';
             $phpCode .= '    } ';
             
             // Vérifier si la variable finale est NULL
             $phpCode .= '    if (' . $phpVar . ' === null) { ';
-            $phpCode .= '        throw new Lunar\\Template\\Exception\\TemplateException(sprintf("Variable \\"%s\\" is null in strict mode.", \'' . $expression . '\')); ';
+            $phpCode .= '        throw new Lunar\Template\Exception\TemplateException(sprintf("Variable \"%s\" is null in strict mode.", \''. $expression . '\')); ';
             $phpCode .= '    } ';
             $phpCode .= '    echo htmlspecialchars((string)' . $phpVar . ', ENT_QUOTES, \'UTF-8\'); ';
-            $phpCode .= '} else { '; // Else du if ($engine->isStrictMode())
+            $phpCode .= '} else { ';// Else du if ($engine->isStrictMode())
             // Comportement par défaut (non strict): afficher une chaîne vide si indéfinie ou null.
             $phpCode .= '    echo htmlspecialchars((string)(' . $phpVar . ' ?? \'\'), ENT_QUOTES, \'UTF-8\'); ';
             $phpCode .= '} ?>'; // Fermeture du bloc PHP
@@ -361,13 +390,17 @@ class AdvancedTemplateEngine
             // Parse les arguments pour créer un tableau PHP
             $parsedArgs = $this->parseMacroArguments($args);
 
-            return '<?= $this->callMacro(\'' . $macroName . '\', ' . $parsedArgs . ') ?>';
+            return '<?= $this->callMacro(\''. $macroName . '\', ' . $parsedArgs . ') ?>';
         }, $source);
 
         // Nettoyage des éventuelles balises de blocs non remplacées
         $source = preg_replace('/\[%\s*block\s+\S+\s*%\]/', '', $source);
+        $source = (string) preg_replace('/\[%\s*endblock\s*%\]/', '', $source);
 
-        return (string) preg_replace('/\[%\s*endblock\s*%\]/', '', $source);
+        // Restaurer le contenu protégé des balises <script> et <style>
+        $source = $this->restoreScriptAndStyleContent($source, $protectedContent);
+
+        return $source;
     }
 
     /**
@@ -380,7 +413,7 @@ class AdvancedTemplateEngine
      *
      * @return string contenu final après fusion avec le template parent
      */
-    protected function processExtends(string $source, array &$dependencies = []): string
+    protected function processExtends(string $source, array & $dependencies = []): string
     {
         if (preg_match('/\[%\s*extends\s+[\'"](.+?)[\'"]\s*%\]/', $source, $matches)) {
             $parentTemplate = $matches[1];
@@ -452,7 +485,7 @@ class AdvancedTemplateEngine
         $inQuotes = false;
         $quoteChar = '';
 
-        for ($i = 0; $i < \strlen($args); $i++) {
+        for ($i = 0; $i < strlen($args); $i++) {
             $char = $args[$i];
 
             if (!$inQuotes && ($char === '"' || $char === "'")) {
@@ -487,7 +520,7 @@ class AdvancedTemplateEngine
     protected function convertMacroArgument(string $arg): string
     {
         // Si c'est une chaine entre guillemets, la garder telle quelle
-        if (preg_match('/^(["\']).*\1$/', $arg)) {
+        if (preg_match('/^(["\\]).*\\1$/', $arg)) {
             return $arg;
         }
 
@@ -498,7 +531,7 @@ class AdvancedTemplateEngine
 
         // Si c'est un mot-cle PHP, le garder tel quel
         $phpKeywords = ['true', 'false', 'null'];
-        if (\in_array(strtolower($arg), $phpKeywords, true)) {
+        if (in_array(strtolower($arg), $phpKeywords, true)) {
             return $arg;
         }
 
@@ -525,7 +558,7 @@ class AdvancedTemplateEngine
         // Separe par le point
         $parts = explode('.', $expression);
 
-        if (\count($parts) === 1) {
+        if (count($parts) === 1) {
             // Pas de notation point, simple variable
             return '$' . $parts[0];
         }
@@ -589,7 +622,7 @@ class AdvancedTemplateEngine
 
         // Protege les chaines entre guillemets doubles et simples
         $expression = preg_replace_callback('/(["\'])(?:(?!\1)[^\\\\]|\\\\.)*\1/', function ($match) use (&$strings, &$index, $placeholder) {
-            $key = \sprintf($placeholder, $index++);
+            $key = sprintf($placeholder, $index++);
             $strings[$key] = $match[0];
 
             return $key;
@@ -601,7 +634,7 @@ class AdvancedTemplateEngine
 
             // Ne pas modifier les mots-clés PHP, constantes, ou appels de fonctions
             $phpKeywords = ['true', 'false', 'null', 'and', 'or', 'not', 'isset', 'empty', 'array', 'count'];
-            if (\in_array(strtolower($var), $phpKeywords, true)) {
+            if (in_array(strtolower($var), $phpKeywords, true)) {
                 return $var;
             }
 
@@ -656,6 +689,8 @@ class AdvancedTemplateEngine
      *
      * @param string $namespace Namespace des classes de macros
      * @param string $directory Répertoire contenant les fichiers de macros
+     *
+     * @psalm-suppress UnresolvableInclude
      */
     public function loadMacrosFromDirectory(string $namespace, string $directory): void
     {
