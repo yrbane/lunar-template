@@ -290,4 +290,74 @@ class TemplateCompilerTest extends TestCase
         $this->assertStringNotContainsString('should_not_render', $result);
         $this->assertStringNotContainsString('<?=', $result);
     }
+
+    /**
+     * Issue #15 : la directive `[% include %]` doit être compilée et non pas
+     * laissée telle quelle dans la sortie.
+     */
+    public function testCompileIncludeDirectiveIsExpanded(): void
+    {
+        $result = $this->compiler->compile("[% include 'partials/header.tpl' %]");
+
+        $this->assertStringNotContainsString('[% include', $result);
+        $this->assertStringContainsString('renderInclude', $result);
+        $this->assertStringContainsString("'partials/header.tpl'", $result);
+    }
+
+    public function testCompileIncludeDirectiveWithVariables(): void
+    {
+        $result = $this->compiler->compile("[% include 'card.tpl' with {title: 'Hello'} %]");
+
+        $this->assertStringNotContainsString('[% include', $result);
+        $this->assertStringContainsString('renderInclude', $result);
+        $this->assertStringContainsString("'title'", $result);
+    }
+
+    /**
+     * Issue #15 : même symptôme attendu pour `[% set %]`.
+     */
+    public function testCompileSetDirectiveIsExpanded(): void
+    {
+        $result = $this->compiler->compile("[% set greeting = 'Hello' %]");
+
+        $this->assertStringNotContainsString('[% set', $result);
+        $this->assertStringContainsString('$greeting', $result);
+        $this->assertStringContainsString("'Hello'", $result);
+    }
+
+    public function testCompileLeavesNoUnknownDirectiveBehind(): void
+    {
+        // Concaténation de plusieurs directives connues. Aucune ne doit subsister
+        // sous forme `[% ... %]` après compilation (à l'exception des tags `if`,
+        // `for`, etc. déjà gérés par leurs propres routines).
+        $source = "[% include 'a.tpl' %][% set x = 1 %]Hello [[ x ]]";
+        $result = $this->compiler->compile($source);
+
+        $this->assertStringNotContainsString('[% include', $result);
+        $this->assertStringNotContainsString('[% set', $result);
+    }
+
+    /**
+     * OCP : un consumer doit pouvoir enregistrer une directive custom.
+     */
+    public function testCustomDirectiveCanBeRegistered(): void
+    {
+        $custom = new class () implements \Lunar\Template\Compiler\Directive\DirectiveInterface {
+            public function getName(): string
+            {
+                return 'shout';
+            }
+
+            public function compile(string $expression): string
+            {
+                return '<?= strtoupper(' . trim($expression) . ') ?>';
+            }
+        };
+
+        $compiler = new TemplateCompiler([$custom]);
+        $result = $compiler->compile("[% shout 'hi' %]");
+
+        $this->assertStringNotContainsString('[% shout', $result);
+        $this->assertStringContainsString('strtoupper', $result);
+    }
 }

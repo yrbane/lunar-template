@@ -89,6 +89,20 @@ class TemplateRenderer implements RendererInterface
     }
 
     /**
+     * Render an included template within an enclosing render() call.
+     *
+     * Called by code emitted from `[% include 'partial' %]` (cf. IncludeDirective).
+     * Variables of the parent scope are forwarded via `get_defined_vars()` so the
+     * partial sees what the parent sees, plus any explicit `with {…}` overrides.
+     *
+     * @param array<string, mixed> $variables Variables to expose to the partial
+     */
+    public function renderInclude(string $template, array $variables = []): string
+    {
+        return $this->render($template, $variables);
+    }
+
+    /**
      * {@inheritDoc}
      */
     public function exists(string $template): bool

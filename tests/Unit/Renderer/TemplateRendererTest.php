@@ -318,4 +318,40 @@ class TemplateRendererTest extends TestCase
 
         $this->assertSame('John', $result);
     }
+
+    /**
+     * Issue #15 : `[% include %]` doit produire le contenu rendu du partial,
+     * pas la directive littérale.
+     */
+    public function testRenderIncludeDirective(): void
+    {
+        $this->createTemplate('header.tpl', '<header>[[ title ]]</header>');
+        $this->createTemplate('page.tpl', "[% include 'header.tpl' %]<main>body</main>");
+
+        $result = $this->renderer->render('page', ['title' => 'Lunar']);
+
+        $this->assertSame('<header>Lunar</header><main>body</main>', $result);
+    }
+
+    public function testRenderIncludeWithExplicitVariables(): void
+    {
+        $this->createTemplate('card.tpl', '<div>[[ label ]]</div>');
+        $this->createTemplate(
+            'page.tpl',
+            "[% include 'card.tpl' with {label: 'Override'} %]",
+        );
+
+        $result = $this->renderer->render('page', ['label' => 'FromParent']);
+
+        $this->assertSame('<div>Override</div>', $result);
+    }
+
+    public function testRenderSetDirective(): void
+    {
+        $this->createTemplate('page.tpl', "[% set greeting = 'Hello' %][[ greeting ]]");
+
+        $result = $this->renderer->render('page');
+
+        $this->assertSame('Hello', $result);
+    }
 }

@@ -4,11 +4,41 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Compiler;
 
+use Lunar\Template\Compiler\Directive\DirectiveInterface;
+use Lunar\Template\Compiler\Directive\IncludeDirective;
+use Lunar\Template\Compiler\Directive\SetDirective;
+
 /**
  * Compiles Lunar template syntax into PHP code.
  */
 class TemplateCompiler implements CompilerInterface
 {
+    /** @var array<string, DirectiveInterface> Indexed by directive name. */
+    private array $directives = [];
+
+    /**
+     * @param iterable<DirectiveInterface>|null $directives Custom directives. When null,
+     *                                                      defaults to IncludeDirective + SetDirective.
+     */
+    public function __construct(?iterable $directives = null)
+    {
+        if ($directives === null) {
+            $directives = [new IncludeDirective(), new SetDirective()];
+        }
+
+        foreach ($directives as $directive) {
+            $this->addDirective($directive);
+        }
+    }
+
+    /**
+     * Register a directive (or replace one with the same name).
+     */
+    public function addDirective(DirectiveInterface $directive): void
+    {
+        $this->directives[$directive->getName()] = $directive;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -29,6 +59,10 @@ class TemplateCompiler implements CompilerInterface
         // Process loops
         $source = $this->compileLoops($source);
 
+        // Process registered directives ([% include %], [% set %], …)
+        // Doit précéder cleanupBlockTags() pour ne pas avaler les directives.
+        $source = $this->compileDirectives($source);
+
         // Process macros
         $source = $this->compileMacros($source);
 
@@ -36,6 +70,33 @@ class TemplateCompiler implements CompilerInterface
         $source = $this->cleanupBlockTags($source);
 
         return $source;
+    }
+
+    /**
+     * Apply registered directives. Tags whose name is not in the registry
+     * are left untouched (so unknown `[% xxx %]` are eventually stripped by
+     * downstream stages or surfaced by the linter).
+     */
+    private function compileDirectives(string $source): string
+    {
+        if ($this->directives === []) {
+            return $source;
+        }
+
+        return (string) preg_replace_callback(
+            '/\[%\s*(\w+)(?:\s+(.*?))?\s*%\]/s',
+            function (array $matches): string {
+                $name = $matches[1];
+                $expression = $matches[2] ?? '';
+
+                if (!isset($this->directives[$name])) {
+                    return $matches[0];
+                }
+
+                return $this->directives[$name]->compile($expression);
+            },
+            $source,
+        );
     }
 
     /**
