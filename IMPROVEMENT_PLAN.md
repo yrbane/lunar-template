@@ -1,99 +1,169 @@
-# Plan d'Amélioration - Lunar Template Engine (Post-Audit)
+# Plan d'amélioration — Lunar Template Engine
 
-Ce document détaille la feuille de route pour implémenter les recommandations issues de l'audit technique du 07/12/2025.
+Roadmap active du moteur de templates. Le plan d'audit initial (IMP-01..04) est livré ; ce document trace les chantiers restants et les nouvelles priorités.
 
-**Objectifs** :
-1. Sécuriser les failles potentielles (XSS dans les macros).
-2. Corriger les bugs critiques d'architecture (Invalidation du cache d'héritage).
-3. Améliorer l'expérience développeur (DX) et la maintenabilité.
+**Dernière mise à jour** : 2026-05-05
 
 ---
 
-## Milestone 1: Robustesse & Sécurité (Priorité Haute)
-**Objectif** : Rendre le moteur fiable en production et sécurisé par défaut.
+## État actuel (après nettoyage)
 
-### [IMP-01] Correction de l'invalidation du cache d'héritage
-**Type** : Bugfix / Architecture
-**Complexité** : Élevée (5/5)
-**Statut** : ✅ Terminé (07/12/2025)
-**Description** :
-Actuellement, le système de cache ne vérifie que la date de modification du fichier template appelé (ex: `page.tpl`). Si ce template étend un parent (ex: `layout.tpl`), et que le parent est modifié, `page.tpl` n'est pas recompilé, servant une version obsolète.
-Il faut modifier le compilateur pour extraire la liste des dépendances (parents) et les stocker (soit dans le fichier compilé, soit dans un fichier méta séparé). Le Renderer doit vérifier ces dépendances avant de servir le cache.
+- **PHP** : 8.3+ avec typage strict
+- **Tests** : 1722 tests, ~98 % passants (33 erreurs + 3 échecs résiduels, tous documentés ci-dessous)
+- **Qualité** : PHPStan niveau 7, php-cs-fixer
+- **Documentation** : `README.md` (EN), `README.fr.md` (FR), `CLAUDE.md` (consignes projet)
 
-**Critères d'Acceptation** :
-- [x] Le compilateur détecte tous les `[% extends "..." %]` et stocke ces chemins.
-- [x] `TemplateRenderer::needsCompilation` vérifie récursivement la date de modification des parents.
-- [x] Test d'intégration : Rendre `page.tpl`, modifier `layout.tpl`, rendre `page.tpl` -> le contenu doit changer.
-- [x] Pas de régression de performance majeure sur le "Warm Run" (vérification rapide des mtimes).
+### Récemment livré (décembre 2025 → mai 2026)
 
-### [IMP-02] Sécurisation des attributs de Macros (AttributeBag)
-**Type** : Sécurité
-**Complexité** : Moyenne (3/5)
-**Statut** : ✅ Terminé (07/12/2025)
-**Description** :
-Les macros actuelles (ex: `InputMacro`) concatènent des chaînes HTML manuellement (`class="' . $class . '"`). Un oubli d'échappement crée une faille XSS.
-Il faut créer une classe utilitaire `AttributeBag` ou `HtmlHelper` qui accepte un tableau d'attributs et génère la chaîne HTML en forçant l'échappement via `htmlspecialchars`.
-
-**Critères d'Acceptation** :
-- [x] Création de la classe `Lunar\Template\Html\AttributeBag`.
-- [x] Refactoring de `InputMacro` pour utiliser `AttributeBag`.
-- [x] Test unitaire : Vérifier que `AttributeBag` échappe correctement les guillemets et caractères spéciaux.
-- [x] Les macros existantes continuent de fonctionner à l'identique.
+- **Issue #13** : Commentaires `[# ... #]` (multi-ligne, jamais émis dans la sortie HTML)
+- **Appels de méthode** : `[[ obj.method() ]]` compile vers `$obj->method()`
+- **Filtre `|raw` inline** : `[[ html|raw ]]` court-circuite l'échappement HTML
+- **Auto-extension `.tpl`** : `[% extends 'base' %]` résout `base.tpl` si nécessaire
+- **Fix regex** : `convertMacroArgument` détectait incorrectement les chaînes
+- **Préservation des tokens** : `[[ ]]` et `[% %]` autorisés dans `<script>`/`<style>`
+- **Audit du dépôt** : suppression des artefacts SpecKit, des spécifications livrées et des leaks de cache de tests
 
 ---
 
-## Milestone 2: Expérience Développeur (DX)
-**Objectif** : Faciliter le débogage et l'intégration.
+## Milestone 1 — Stabilisation (Priorité Haute)
 
-### [IMP-03] Mode Strict pour les variables
-**Type** : Feature
-**Complexité** : Faible (2/5)
-**Statut** : ✅ Terminé (07/12/2025)
-**Description** :
-Par défaut, une variable inconnue `[[ typo ]]` affiche une chaîne vide. C'est bien pour la prod, mais terrible pour le dev.
-Ajouter une option de configuration `strict_variables` (bool). Si true, lancer une exception `TemplateException` si une variable est null ou non définie.
+### [STAB-01] Architecture Cache : unifier CacheInterface
 
-**Critères d'Acceptation** :
-- [x] Ajouter la config au constructeur de `AdvancedTemplateEngine` (via `setStrictVariables`).
-- [x] Modifier le code généré par le compilateur pour vérifier l'existence si le mode est actif (`!isset($var)`).
-- [x] Test : Vérifier que l'exception est levée uniquement en mode strict pour les variables indéfinies.
-- [x] Test : Vérifier que l'exception est levée uniquement en mode strict pour les variables nulles.
-- [x] Test : Vérifier que le comportement par défaut (non strict) n'est pas modifié.
+**Type** : Bugfix / Refactoring — **Complexité** : 4/5 — **Statut** : 🔴 À faire
 
-### [IMP-04] Source Maps pour le débogage (Basic)
-**Type** : Feature
-**Complexité** : Moyenne (3/5)
-**Statut** : ✅ Terminé (07/12/2025)
-**Description** :
-Les erreurs PHP (ex: appel de méthode sur null) se produisent dans le fichier compilé (`/cache/hash.php:45`). Le développeur ne sait pas à quelle ligne du `.tpl` cela correspond.
-Il faut capturer les erreurs fatales/exceptions lors du `include` du template compilé, et essayer de mapper la ligne PHP vers la ligne du template original (via une table de correspondance générée lors de la compilation ou une approximation).
+**Problème** :
+`FilesystemCache implements CacheStorageInterface`, mais :
+- `CacheWarmer::__construct` typé `CacheInterface` (qui n'existe pas)
+- `FilesystemCacheTest::testImplementsCacheInterface` attend `CacheInterface`
+- Méthodes `has()`, `getPath()`, `getDirectory()` testées mais non exposées par `CacheStorageInterface`
 
-**Critères d'Acceptation** :
-- [x] Le compilateur injecte des marqueurs `/* LUNAR_LINE:X:/path/to/file.tpl */` dans le code compilé.
-- [x] `AdvancedTemplateEngine::render` intercepte les `Throwable`.
-- [x] L'exception relancée est une `TemplateException` dont le message contient le nom du template et le numéro de ligne original.
-- [x] Le test unitaire `SourceMapTest` passe.
+**Conséquence** : 33 erreurs sur la suite (CacheWarmer, FilesystemCache, ConstructorCreatesDirectories).
+
+**Critères d'acceptation** :
+- [ ] Décider entre PSR-16 (`Psr\SimpleCache\CacheInterface`) et l'interface maison.
+- [ ] Renommer/aligner `CacheStorageInterface` ↔ `CacheInterface` cohéremment.
+- [ ] Exposer `has()`, `getPath()`/`getDirectory()` via l'interface ou retirer ces tests.
+- [ ] Les 33 erreurs disparaissent.
+
+### [STAB-02] Fix `testPathNormalization` (leaks de dossiers `\tmp\` sous Linux)
+
+**Type** : Bugfix tests — **Complexité** : 1/5 — **Statut** : 🔴 À faire
+
+**Problème** :
+Le test `tests/AdvancedTemplateEngineTest.php::testPathNormalization` fait :
+```php
+str_replace('/', '\\', $this->cacheDir . '_normalized')
+```
+Sous Linux, ceci crée un dossier littéral `\tmp\lunar-cache-tests-...\_normalized` à la racine du projet (les `\` ne sont pas séparateurs sous Linux). Le cleanup utilise le chemin original avec `/`, donc ne nettoie jamais.
+
+**Critères d'acceptation** :
+- [ ] Skip le test si `PHP_OS_FAMILY !== 'Windows'`, OU :
+- [ ] Mock le path sans toucher au filesystem, OU :
+- [ ] Cleanup correct du chemin backslash.
+- [ ] Plus aucun `\tmp\*` créé après une exécution complète des tests.
+
+### [STAB-03] Fix `testFullBlogTemplateRendering`
+
+**Type** : Bugfix — **Complexité** : 2/5 — **Statut** : 🔴 À faire
+
+**Problème** :
+Le test échoue sur l'assertion `src="/assets/js/blog.js"`. Le block `[% block scripts %]` du template enfant n'écrase pas correctement celui du parent dans certains cas d'héritage chaîné. Reproduit sur main avant nos commits récents — n'est pas une régression.
+
+**Critères d'acceptation** :
+- [ ] Identifier le défaut dans `processExtends` ou `extractBlocks`.
+- [ ] Ajouter un test unitaire ciblé (au-delà du test d'intégration).
+- [ ] Le test d'intégration passe sans modification.
+
+### [STAB-04] `testTemplateThrowsExceptionDuringExecution`
+
+**Type** : Bugfix tests — **Complexité** : 1/5 — **Statut** : 🔴 À faire
+
+**Problème** :
+Le test attend `RuntimeException` mais reçoit `TemplateException`. Soit le test est obsolète (refactoring de la hiérarchie d'exceptions non répercuté), soit l'implémentation devrait propager différemment.
+
+**Critères d'acceptation** :
+- [ ] Décider quel comportement est correct.
+- [ ] Aligner test ↔ implémentation.
 
 ---
 
-## Milestone 3: Modernisation (Architecture)
-**Objectif** : Standardiser le code avec l'écosystème PHP moderne.
+## Milestone 2 — Mode strict & DX (Priorité Moyenne)
 
-### [IMP-05] Adaptateur PSR-16 (Simple Cache)
-**Type** : Refactoring
-**Complexité** : Moyenne (3/5)
-**Description** :
-Remplacer l'implémentation propriétaire `FilesystemCache` par une dépendance vers `psr/simple-cache`. Fournir une implémentation par défaut basée sur fichier, mais permettre l'injection de n'importe quel `CacheInterface` PSR-16 (Redis, Memcached).
+### [DX-01] Mode strict pour les appels de méthode
 
-**Critères d'Acceptation** :
-- [ ] `Lunar\Template\Cache\CacheInterface` étend `Psr\SimpleCache\CacheInterface` (ou est remplacé par).
-- [ ] Les tests de cache utilisent des mocks PSR-16.
+**Type** : Feature — **Complexité** : 2/5 — **Statut** : 🟡 Idée
+
+**Contexte** :
+`[[ obj.method() ]]` compile vers `$obj->method() ?? ''`. En mode strict, la branche `isset()` est court-circuitée car invalide en PHP. Conséquence : on ne sait pas si `$obj` est null avant l'appel.
+
+**Idée** :
+En mode strict, générer :
+```php
+if (!isset($obj)) throw ...
+if (!method_exists($obj, 'method')) throw ...
+echo htmlspecialchars($obj->method() ?? '', ...);
+```
+
+### [DX-02] Source maps complètes
+
+**Type** : Feature — **Complexité** : 3/5 — **Statut** : 🟡 Idée
+
+**Contexte** :
+IMP-04 a livré le source mapping de base. Une vraie source map (table `ligne_compilée → ligne_source`) permettrait de pointer la ligne exacte du `.tpl` même après extends/blocks/include.
+
+### [DX-03] Linter de templates en CLI
+
+**Type** : Feature — **Complexité** : 3/5 — **Statut** : 🟡 Idée
+
+**Contexte** :
+`bin/lunar-template lint <fichier.tpl>` qui détecte :
+- tags non fermés (`[% if %]` sans `[% endif %]`)
+- variables jamais définies (avec un `--data-fixture=...`)
+- macros inconnues
+- syntaxe invalide
 
 ---
 
-## Standards de Qualité requis
-Pour chaque issue ci-dessus :
-1.  **TDD** : Créer le test (rouge) avant le code.
-2.  **Typage** : `declare(strict_types=1)`, typage fort des arguments/retours.
-3.  **Doc** : PHPDoc complet sur les nouvelles classes.
-4.  **Immutabilité** : Utiliser `readonly` pour les DTOs/Services si possible.
+## Milestone 3 — Modernisation (Priorité Basse)
+
+### [MOD-01] Adaptateur PSR-16 (anciennement IMP-05)
+
+**Type** : Refactoring — **Complexité** : 3/5 — **Statut** : 🟡 Idée
+
+Remplacer ou wrapper `FilesystemCache` derrière `Psr\SimpleCache\CacheInterface` (déjà déclaré en dépendance dans `composer.json`). Ouvre la voie à Redis/Memcached/APCu.
+
+**Critères d'acceptation** :
+- [ ] `Lunar\Template\Cache\Psr16Adapter` qui wrappe un `Psr\SimpleCache\CacheInterface`.
+- [ ] `TemplateRenderer` accepte au choix `CacheStorageInterface` ou `CacheInterface` PSR-16.
+- [ ] Tests avec un mock PSR-16 (réutilisable).
+
+### [MOD-02] Plugin de macros
+
+**Type** : Architecture — **Complexité** : 3/5 — **Statut** : 🟡 Idée
+
+Système de plugins permettant à un package tiers (ex. un thème) d'enregistrer ses macros et filtres via auto-discovery (composer extra).
+
+### [MOD-03] Cible PHP 8.4 (readonly properties partout)
+
+**Type** : Refactoring — **Complexité** : 2/5 — **Statut** : 🟡 Idée
+
+Une fois la 8.3 obsolète, passer les DTOs/services en `readonly class`.
+
+---
+
+## Standards de qualité
+
+Pour chaque chantier :
+
+1. **TDD** : test (rouge) avant code (vert).
+2. **Typage strict** : `declare(strict_types=1)`, types nominatifs partout.
+3. **PSR-12** : via php-cs-fixer.
+4. **PHPStan niveau 7** : zéro nouvelle erreur.
+5. **Commits français** : message clair, mention de l'ID de chantier (`STAB-01`, `DX-02`...).
+6. **Doc** : PHPDoc complet sur les nouvelles classes ; mise à jour des README si la syntaxe utilisateur change.
+
+---
+
+## Contributions
+
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) (à créer si absent — l'établir comme STAB-05 si l'équipe s'étend).
