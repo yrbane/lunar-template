@@ -361,7 +361,12 @@ class TemplateCompiler implements CompilerInterface
     }
 
     /**
-     * Convert dot notation to array access.
+     * Convertit la notation pointée en expression PHP.
+     *
+     * - segments string  → \Lunar\Template\Runtime\Access::get(prev, 'key')
+     *                      (accès hybride array/objet — issue #14)
+     * - segments numériques → prev[index]   (accès tableau direct)
+     * - segments avec ()    → prev->method() (appel de méthode)
      */
     private function convertDotNotation(string $expression): string
     {
@@ -378,10 +383,12 @@ class TemplateCompiler implements CompilerInterface
         $result = '$' . array_shift($parts);
 
         foreach ($parts as $part) {
-            if (ctype_digit($part)) {
+            if (str_contains($part, '(')) {
+                $result .= '->' . $part;
+            } elseif (ctype_digit($part)) {
                 $result .= '[' . $part . ']';
             } else {
-                $result .= '[\'' . $part . '\']';
+                $result = '\\Lunar\\Template\\Runtime\\Access::get(' . $result . ', \'' . $part . '\')';
             }
         }
 

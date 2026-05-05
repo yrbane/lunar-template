@@ -516,4 +516,64 @@ class FullTemplateSystemTest extends TestCase
         $this->assertStringNotContainsString('plusieurs lignes', $result);
         $this->assertStringContainsString('<p>Salut</p>', $result);
     }
+
+    public function testRendersObjectPropertyWithDottedNotation(): void
+    {
+        // Cas réel issue #14 : un DTO immuable (final readonly) passé tel quel.
+        $template = '<html lang="[[ lang.code ]]" dir="[[ lang.direction ]]"></html>';
+        file_put_contents($this->templatesDir . '/lang.tpl', $template);
+
+        $lang = new readonly class('fr', 'ltr') {
+            public function __construct(public string $code, public string $direction)
+            {
+            }
+        };
+
+        $result = $this->engine->render('lang', ['lang' => $lang]);
+
+        $this->assertSame('<html lang="fr" dir="ltr"></html>', $result);
+    }
+
+    public function testRendersMixedObjectAndArrayNesting(): void
+    {
+        $template = 'Auteur : [[ post.author.name ]]';
+        file_put_contents($this->templatesDir . '/mixed.tpl', $template);
+
+        $post = new readonly class(['name' => 'Jean Dupont']) {
+            public function __construct(public array $author)
+            {
+            }
+        };
+
+        $result = $this->engine->render('mixed', ['post' => $post]);
+
+        $this->assertSame('Auteur : Jean Dupont', $result);
+    }
+
+    public function testRendersArrayContainingObject(): void
+    {
+        $template = 'Pays : [[ data.lang.code ]]';
+        file_put_contents($this->templatesDir . '/array-obj.tpl', $template);
+
+        $lang = new readonly class('en') {
+            public function __construct(public string $code)
+            {
+            }
+        };
+
+        $result = $this->engine->render('array-obj', ['data' => ['lang' => $lang]]);
+
+        $this->assertSame('Pays : en', $result);
+    }
+
+    public function testArrayKeyAccessStillWorks(): void
+    {
+        // Régression : l'accès tableau classique doit rester intact.
+        $template = '[[ user.name ]]';
+        file_put_contents($this->templatesDir . '/array-only.tpl', $template);
+
+        $result = $this->engine->render('array-only', ['user' => ['name' => 'Alice']]);
+
+        $this->assertSame('Alice', $result);
+    }
 }

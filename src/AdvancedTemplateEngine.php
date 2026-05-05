@@ -369,17 +369,26 @@ class AdvancedTemplateEngine
             // Convertit la notation point en acces tableau/objet PHP
             $phpVar = $this->convertDotNotation($expression);
 
-            // Détecter si c'est un appel de méthode (contient ->xxx())
-            $isMethodCall = str_contains($phpVar, '->');
+            // Une expression avec un appel de fonction (Access::get(...) ou ->method())
+            // ne peut pas être passée à isset() — PHP exige un véritable lvalue.
+            $isFunctionLike = str_contains($phpVar, '->') || str_contains($phpVar, 'Access::get');
 
             // Si |raw, pas d'échappement HTML
             if ($isRaw) {
                 return '<?= (string)(' . $phpVar . ' ?? \'\') ?>';
             }
 
-            // Pour les appels de méthodes, pas de vérification isset (invalide en PHP)
-            if ($isMethodCall) {
-                return '<?= htmlspecialchars((string)(' . $phpVar . ' ?? \'\'), ENT_QUOTES, \'UTF-8\') ?>';
+            // Pour les expressions function-like, pas de vérification isset.
+            // En mode strict on retombe sur un check === null sur la valeur finale.
+            if ($isFunctionLike) {
+                $phpCode = '<?php ';
+                $phpCode .= '$__lunarTmp = ' . $phpVar . '; ';
+                $phpCode .= 'if ($engine->isStrictMode() && $__lunarTmp === null) { ';
+                $phpCode .= '    throw new Lunar\\Template\\Exception\\TemplateException(sprintf("Undefined or null variable \"%s\" in strict mode.", \'' . $expression . '\')); ';
+                $phpCode .= '} ';
+                $phpCode .= 'echo htmlspecialchars((string)($__lunarTmp ?? \'\'), ENT_QUOTES, \'UTF-8\'); ?>';
+
+                return $phpCode;
             }
 
             // Injecter la logique du mode strict directement dans le code PHP généré
@@ -592,7 +601,12 @@ class AdvancedTemplateEngine
     /**
      * Convertit la notation point en acces tableau PHP.
      *
-     * Exemple: "user.profile.name" devient "$user['profile']['name']"
+     * Exemple: "user.profile.name" devient
+     * "\Lunar\Template\Runtime\Access::get(\Lunar\Template\Runtime\Access::get($user, 'profile'), 'name')"
+     *
+     * Les clés string passent par Access::get pour supporter à la fois
+     * tableaux et objets (issue #14). Les indices numériques restent en
+     * accès tableau direct ; les appels de méthode utilisent ->method().
      *
      * @param string $expression Expression avec notation point
      *
@@ -616,17 +630,17 @@ class AdvancedTemplateEngine
         // Premier element est la variable racine
         $result = '$' . array_shift($parts);
 
-        // Les autres elements deviennent des acces tableau ou methodes
+        // Les autres elements deviennent des acces tableau, methodes ou hybrides
         foreach ($parts as $part) {
             // Gere les appels de methodes (contient des parentheses)
             if (str_contains($part, '(')) {
                 $result .= '->' . $part;
             } elseif (ctype_digit($part)) {
-                // Gere les index numeriques
+                // Gere les index numeriques (tableau uniquement)
                 $result .= '[' . $part . ']';
             } else {
-                // Gere les cles string
-                $result .= '[\'' . $part . '\']';
+                // Cle string : accès hybride tableau/objet via Access::get
+                $result = '\\Lunar\\Template\\Runtime\\Access::get(' . $result . ', \'' . $part . '\')';
             }
         }
 

@@ -42,14 +42,35 @@ class TemplateCompilerTest extends TestCase
     {
         $result = $this->compiler->compile('[[ user.profile.name ]]');
 
-        $this->assertStringContainsString("\$user['profile']['name']", $result);
+        // Accès hybride via Access::get pour supporter array ET objet (issue #14).
+        $this->assertStringContainsString('\\Lunar\\Template\\Runtime\\Access::get', $result);
+        $this->assertStringContainsString("'profile'", $result);
+        $this->assertStringContainsString("'name'", $result);
+        $this->assertStringContainsString('$user', $result);
     }
 
     public function testCompileDotNotationWithNumericIndex(): void
     {
+        // Les indices numériques restent en accès tableau direct.
         $result = $this->compiler->compile('[[ items.0.name ]]');
 
-        $this->assertStringContainsString("\$items[0]['name']", $result);
+        $this->assertStringContainsString('$items[0]', $result);
+        $this->assertStringContainsString("'name'", $result);
+    }
+
+    public function testCompileDotNotationOnObject(): void
+    {
+        // Issue #14 : accès propriété objet doit produire un appel à Access::get.
+        $result = $this->compiler->compile('[[ lang.code ]]');
+
+        $this->assertStringContainsString('\\Lunar\\Template\\Runtime\\Access::get($lang, \'code\')', $result);
+    }
+
+    public function testCompileMethodCallStillUsesArrow(): void
+    {
+        $result = $this->compiler->compile('[[ user.getName() ]]');
+
+        $this->assertStringContainsString('$user->getName()', $result);
     }
 
     public function testCompileIfCondition(): void
