@@ -525,7 +525,7 @@ class AdvancedTemplateEngine
     protected function convertMacroArgument(string $arg): string
     {
         // Si c'est une chaine entre guillemets, la garder telle quelle
-        if (preg_match('/^(["\\]).*\\1$/', $arg)) {
+        if (preg_match('/^(["\']).*\1$/s', $arg)) {
             return $arg;
         }
 
