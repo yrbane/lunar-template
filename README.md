@@ -829,7 +829,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
-### v1.5.0 (in development)
+### v1.5.0
 - **Template comments**: `[# ... #]` (multi-line, never emitted in the HTML output)
 - **Method calls**: `[[ obj.method() ]]` routes through a null-safe helper (no more `TypeError` on null)
 - **Hybrid array/object access**: `[[ obj.prop ]]` works on arrays AND objects (readonly DTOs) via a `Runtime\Access` helper (issue #14)

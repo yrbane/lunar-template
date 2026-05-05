@@ -777,7 +777,7 @@ Ce projet est sous licence MIT — voir le fichier [LICENSE](LICENSE) pour plus 
 
 ## Journal des modifications
 
-### v1.5.0 (en préparation)
+### v1.5.0
 - **Commentaires de template** : `[# ... #]` (multi-lignes, jamais émis dans la sortie HTML)
 - **Appels de méthode** : `[[ obj.method() ]]` passe par un helper null-safe (plus de `TypeError` sur `null`)
 - **Accès hybride array/objet** : `[[ obj.prop ]]` fonctionne sur les tableaux ET les objets (DTO `readonly`) via un helper `Runtime\Access` (issue #14)
