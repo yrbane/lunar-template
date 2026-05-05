@@ -35,6 +35,20 @@ class TemplateRenderer implements RendererInterface
     private array $defaultVariables = [];
 
     /**
+     * @var list<string> Reserved variable names. Filtered out before extract()
+     *                   to prevent a caller from overriding internal variables —
+     *                   overriding `__lunar_compiled_file` would otherwise
+     *                   redirect the include to an arbitrary file (RCE).
+     */
+    private const RESERVED_VARIABLE_NAMES = [
+        'this',
+        'engine',
+        '__lunar_compiled_file',
+        '__lunar_variables',
+        '__lunarTmp',
+    ];
+
+    /**
      * @param string $templatePath Path to templates directory
      * @param string $cachePath Path to cache directory
      * @param CompilerInterface|null $compiler Template compiler
@@ -393,21 +407,30 @@ class TemplateRenderer implements RendererInterface
     /**
      * Execute compiled template.
      *
-     * @param string $compiledFile Compiled file path
-     * @param array<string, mixed> $variables Variables to inject
+     * Reserved names (`engine`, `this`, internal `__lunar_*` slots) are stripped
+     * from the variables map before extract(): otherwise an attacker could
+     * override `$__lunar_compiled_file` and redirect `include` (RCE).
+     *
+     * @param string $__lunar_compiled_file Compiled file path
+     * @param array<string, mixed> $__lunar_variables Variables to inject
      *
      * @return string Rendered content
      */
-    private function executeTemplate(string $compiledFile, array $variables): string
+    private function executeTemplate(string $__lunar_compiled_file, array $__lunar_variables): string
     {
-        $variables = array_merge($this->defaultVariables, $variables);
+        $__lunar_variables = array_merge($this->defaultVariables, $__lunar_variables);
 
-        extract($variables, EXTR_OVERWRITE);
+        foreach (self::RESERVED_VARIABLE_NAMES as $__lunar_reserved) {
+            unset($__lunar_variables[$__lunar_reserved]);
+        }
+
+        extract($__lunar_variables, EXTR_SKIP);
+        unset($__lunar_variables, $__lunar_reserved);
 
         ob_start();
 
         try {
-            include $compiledFile;
+            include $__lunar_compiled_file;
         } catch (Throwable $e) {
             ob_end_clean();
 

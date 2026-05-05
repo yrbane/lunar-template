@@ -52,6 +52,21 @@ class AdvancedTemplateEngine
     protected bool $strictVariables = false;
 
     /**
+     * @var list<string> Noms de variables réservés au moteur. Filtrés avant extract()
+     *                   pour empêcher un appelant malveillant de détourner l'include
+     *                   via une variable comme `compiledFile` (RCE) ou de masquer
+     *                   `engine`, `this`, ou les variables internes préfixées `__lunar_`.
+     */
+    private const RESERVED_VARIABLE_NAMES = [
+        'this',
+        'engine',
+        '__lunar_compiled_file',
+        '__lunar_template_file',
+        '__lunar_variables',
+        '__lunarTmp',
+    ];
+
+    /**
      * AdvancedTemplateEngine constructor.
      *
      * @param string $templatePath répertoire où se trouvent les templates source
@@ -207,26 +222,46 @@ class AdvancedTemplateEngine
         // Merge avec les variables par defaut
         $variables = array_merge($this->getDefaultVariables(), $variables);
 
-        extract($variables, EXTR_OVERWRITE);
+        return $this->runCompiledTemplate($compiledFile, $templateFile, $variables);
+    }
 
-        // Variable pour accéder au moteur dans le contexte du template
+    /**
+     * Exécute le fichier compilé dans une portée isolée.
+     *
+     * Les noms réservés sont retirés du tableau pour empêcher un appelant de
+     * réécrire les variables internes (notamment `$__lunar_compiled_file`,
+     * dont l'écrasement aurait permis de détourner `include` vers un fichier
+     * arbitraire — RCE).
+     *
+     * @param array<string, mixed> $__lunar_variables
+     */
+    private function runCompiledTemplate(
+        string $__lunar_compiled_file,
+        string $__lunar_template_file,
+        array $__lunar_variables,
+    ): string {
+        foreach (self::RESERVED_VARIABLE_NAMES as $__lunar_reserved) {
+            unset($__lunar_variables[$__lunar_reserved]);
+        }
+
+        extract($__lunar_variables, EXTR_SKIP);
+        unset($__lunar_variables, $__lunar_reserved);
+
         $engine = $this;
 
         ob_start();
 
         try {
-            include $compiledFile;
+            include $__lunar_compiled_file;
         } catch (Throwable $e) {
             ob_end_clean();
 
-            // DX-02 : résoudre la ligne du compilé vers (file, line) du source d'origine
-            // via les marqueurs L:file:N injectés à la compilation.
-            $compiledLineThrown = $this->extractCompiledLine($e, $compiledFile);
+            $compiledLineThrown = $this->extractCompiledLine($e, $__lunar_compiled_file);
             $resolved = $compiledLineThrown !== null
-                ? SourceMap::resolve($compiledFile, $compiledLineThrown)
+                ? SourceMap::resolve($__lunar_compiled_file, $compiledLineThrown)
                 : null;
 
-            $originalFile = $resolved['file'] ?? $templateFile;
+            $originalFile = $resolved['file'] ?? $__lunar_template_file;
             $originalLine = $resolved['line'] ?? $e->getLine();
 
             $errorMessage = \sprintf(
