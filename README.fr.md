@@ -7,22 +7,22 @@
 
 [English](README.md)
 
-**Lunar Template Engine** est un moteur de templates autonome et avance pour PHP 8.3+, offrant l'heritage de templates, les blocs, les macros et un cache intelligent.
+**Lunar Template Engine** est un moteur de templates autonome et avancé pour PHP 8.3+, offrant l'héritage de templates, les blocs, les macros et un cache intelligent.
 
-## Fonctionnalites
+## Fonctionnalités
 
-- **Heritage de templates** - Etendez vos templates avec `[% extends 'parent.tpl' %]`
-- **Heritage multi-niveaux** - Enchainez plusieurs niveaux de templates avec support de `[% parent %]`
-- **Systeme de blocs** - Surchargez les blocs parents avec `[% block content %]`
-- **Macros** - Composants reutilisables avec `##macroName(args)##`
-- **Directives** - `[% set %]` et `[% include %]` pour un controle avance
-- **Commentaires** - Strippes a la compilation avec `[# ... #]` (multi-lignes, jamais emis)
-- **Cache intelligent** - Compilation et mise en cache automatiques avec prechauffage
-- **Securise** - Protection XSS avec echappement HTML automatique et validation des chemins
-- **Syntaxe claire** - Syntaxe de template intuitive
-- **Architecture modulaire** - Composants Parser, Compiler, Renderer et Cache
-- **Autonome** - Aucune dependance, compatible avec tous les frameworks
-- **100% de couverture de tests** - Entierement teste avec PHPStan niveau 7
+- **Héritage de templates** — Étendez vos templates avec `[% extends 'parent.tpl' %]`
+- **Héritage multi-niveaux** — Enchaînez plusieurs niveaux de templates avec support de `[% parent %]`
+- **Système de blocs** — Surchargez les blocs parents avec `[% block content %]`
+- **Macros** — Composants réutilisables avec `##macroName(args)##`
+- **Directives** — `[% set %]` et `[% include %]` pour un contrôle avancé
+- **Commentaires** — Supprimés à la compilation avec `[# ... #]` (multi-lignes, jamais émis)
+- **Cache intelligent** — Compilation et mise en cache automatiques avec préchauffage
+- **Sécurisé** — Protection XSS avec échappement HTML automatique et validation des chemins
+- **Syntaxe claire** — Syntaxe de template intuitive
+- **Architecture modulaire** — Composants Parser, Compiler, Renderer et Cache
+- **Autonome** — Aucune dépendance, compatible avec tous les frameworks
+- **100 % de couverture de tests** — Entièrement testé avec PHPStan niveau 7
 
 ## Installation
 
@@ -30,9 +30,9 @@
 composer require yrbane/lunar-template
 ```
 
-## Demarrage rapide
+## Démarrage rapide
 
-### Utilisation de AdvancedTemplateEngine (Tout-en-un)
+### Utilisation de AdvancedTemplateEngine (tout-en-un)
 
 ```php
 <?php
@@ -44,9 +44,9 @@ $engine = new AdvancedTemplateEngine(
 );
 
 $html = $engine->render('blog/article', [
-    'title' => 'Mon Article',
-    'content' => 'Contenu de l\'article...',
-    'author' => 'Jean Dupont'
+    'title' => 'Mon article',
+    'content' => 'Contenu de l\'article…',
+    'author' => 'Jean Dupont',
 ]);
 
 echo $html;
@@ -60,28 +60,28 @@ use Lunar\Template\Renderer\TemplateRenderer;
 use Lunar\Template\Cache\FilesystemCache;
 use Lunar\Template\Cache\CacheWarmer;
 
-// Creer le renderer avec cache
+// Créer le renderer avec cache
 $renderer = new TemplateRenderer(
     templatePath: '/chemin/vers/templates',
     cachePath: '/chemin/vers/cache'
 );
 
-// Definir les variables par defaut
+// Définir les variables par défaut
 $renderer->setDefaultVariables([
-    'siteName' => 'Mon Site Web',
-    'currentYear' => date('Y')
+    'siteName' => 'Mon site web',
+    'currentYear' => date('Y'),
 ]);
 
 // Enregistrer des macros
-$renderer->registerMacro('uppercase', fn(string $text) => strtoupper($text));
+$renderer->registerMacro('uppercase', fn (string $text) => strtoupper($text));
 
 // Rendre un template
 $html = $renderer->render('page', ['title' => 'Accueil']);
 
-// Prechauffer le cache
+// Préchauffer le cache
 $cache = new FilesystemCache('/chemin/vers/cache');
 $warmer = new CacheWarmer('/chemin/vers/templates', $cache);
-$warmer->warmRecursive(); // Precompiler tous les templates
+$warmer->warmRecursive(); // Précompiler tous les templates
 ```
 
 ## Syntaxe des templates
@@ -89,58 +89,58 @@ $warmer->warmRecursive(); // Precompiler tous les templates
 ### Variables
 
 ```html
-<!-- Variable simple (echappee automatiquement) -->
+<!-- Variable simple (échappée automatiquement) -->
 <h1>[[ title ]]</h1>
 
-<!-- Propriete d'objet / notation pointee -->
+<!-- Propriété d'objet / notation pointée -->
 <p>Par [[ author.name ]]</p>
 
-<!-- Acces tableau -->
+<!-- Accès tableau -->
 <span>[[ tags.0 ]]</span>
 
-<!-- Acces imbrique -->
+<!-- Accès imbriqué -->
 <p>[[ user.profile.email ]]</p>
 
-<!-- Appel de methode sur un objet -->
+<!-- Appel de méthode sur un objet -->
 <p>[[ user.getFullName() ]]</p>
 
-<!-- Filtre raw inline (pas d'echappement) -->
+<!-- Filtre raw inline (pas d'échappement) -->
 <div>[[ trustedHtml|raw ]]</div>
 ```
 
 ### Commentaires
 
-Utilisez `[# ... #]` pour ecrire des commentaires de template. Ils sont strippes a la compilation et n'apparaissent jamais dans la sortie rendue (contrairement a `<!-- ... -->`) :
+Utilisez `[# ... #]` pour écrire des commentaires de template. Ils sont supprimés à la compilation et n'apparaissent jamais dans la sortie rendue (contrairement à `<!-- ... -->`) :
 
 ```html
-[# Ce bloc est invisible cote navigateur #]
+[# Ce bloc est invisible côté navigateur #]
 <h1>[[ title ]]</h1>
 
 [#
-  Les commentaires multi-lignes sont supportes.
+  Les commentaires multi-lignes sont supportés.
   Pratiques pour documenter des blocs complexes
-  sans fuiter l'explication dans le HTML genere.
+  sans fuiter l'explication dans le HTML généré.
 #]
 ```
 
-> **Note** : Les tokens a l'interieur d'un commentaire (`[[ var ]]`, `[% if %]`, etc.) ne sont pas interpretes -- toute la region est supprimee avant compilation.
+> **Note** : les tokens à l'intérieur d'un commentaire (`[[ var ]]`, `[% if %]`, etc.) ne sont pas interprétés — toute la région est supprimée avant compilation.
 
-### Sortie brute (sans echappement)
+### Sortie brute (sans échappement)
 
-Utilisez la syntaxe `[[! ... !]]` pour afficher du contenu sans echappement HTML :
+Utilisez la syntaxe `[[! ... !]]` pour afficher du contenu sans échappement HTML :
 
 ```html
-<!-- Sortie brute - SANS echappement (uniquement pour contenu de confiance !) -->
+<!-- Sortie brute — SANS échappement (uniquement pour contenu de confiance !) -->
 [[! htmlContent !]]
 
 <!-- Avec filtres -->
 [[! trustedHtml | trim !]]
 
-<!-- Pour le contenu utilisateur, preferez le filtre raw -->
+<!-- Pour le contenu utilisateur, préférez le filtre raw -->
 [[ content | raw ]]
 ```
 
-> **Attention** : N'utilisez `[[! !]]` qu'avec du contenu de confiance. Pour les entrees utilisateur, utilisez toujours la syntaxe `[[ ]]` avec echappement automatique.
+> **Attention** : n'utilisez `[[! !]]` qu'avec du contenu de confiance. Pour les entrées utilisateur, utilisez toujours la syntaxe `[[ ]]` avec échappement automatique.
 
 ### Filtres
 
@@ -150,113 +150,113 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 <!-- Filtre simple -->
 <h1>[[ title | upper ]]</h1>
 
-<!-- Filtres enchaines -->
+<!-- Filtres enchaînés -->
 <p>[[ text | trim | lower | slug ]]</p>
 
 <!-- Filtre avec arguments -->
 <p>[[ price | number_format(2) ]]</p>
-<p>[[ description | truncate(100, "...") ]]</p>
+<p>[[ description | truncate(100, "…") ]]</p>
 
-<!-- Sortie brute (sans echappement) -->
+<!-- Sortie brute (sans échappement) -->
 <div>[[ htmlContent | raw ]]</div>
 ```
 
-#### Filtres integres
+#### Filtres intégrés
 
-**Filtres de chaines :**
-- `upper` - Majuscules
-- `lower` - Minuscules
-- `capitalize` - Premiere lettre en majuscule
-- `title` - Casse de titre
-- `trim`, `ltrim`, `rtrim` - Supprimer les espaces
-- `slug` - Slug URL
-- `truncate(length, suffix)` - Tronquer le texte
-- `excerpt(length)` - Extrait intelligent
-- `wordwrap(width)` - Retour a la ligne
-- `reverse` - Inverser la chaine
-- `repeat(times)` - Repeter
-- `pad_left(length, char)`, `pad_right(length, char)` - Remplir
-- `replace(search, replace)` - Remplacer
-- `split(delimiter)` - Diviser en tableau
+**Filtres de chaînes :**
+- `upper` — Majuscules
+- `lower` — Minuscules
+- `capitalize` — Première lettre en majuscule
+- `title` — Casse de titre
+- `trim`, `ltrim`, `rtrim` — Supprimer les espaces
+- `slug` — Slug URL
+- `truncate(length, suffix)` — Tronquer le texte
+- `excerpt(length)` — Extrait intelligent
+- `wordwrap(width)` — Retour à la ligne
+- `reverse` — Inverser la chaîne
+- `repeat(times)` — Répéter
+- `pad_left(length, char)`, `pad_right(length, char)` — Remplir
+- `replace(search, replace)` — Remplacer
+- `split(delimiter)` — Diviser en tableau
 
-**Filtres numeriques :**
-- `number_format(decimals, dec_point, thousands_sep)` - Formater un nombre
-- `round(precision)` - Arrondir
-- `floor`, `ceil` - Arrondir vers le bas/haut
-- `abs` - Valeur absolue
-- `currency(symbol)` - Formater en devise
-- `percent(decimals)` - Formater en pourcentage
-- `ordinal` - Suffixe ordinal (1st, 2nd, 3rd)
-- `filesize(decimals)` - Taille de fichier lisible
+**Filtres numériques :**
+- `number_format(decimals, dec_point, thousands_sep)` — Formater un nombre
+- `round(precision)` — Arrondir
+- `floor`, `ceil` — Arrondir vers le bas/haut
+- `abs` — Valeur absolue
+- `currency(symbol)` — Formater en devise
+- `percent(decimals)` — Formater en pourcentage
+- `ordinal` — Suffixe ordinal (1st, 2nd, 3rd)
+- `filesize(decimals)` — Taille de fichier lisible
 
 **Filtres de tableaux :**
-- `first`, `last` - Premier/dernier element
-- `length` - Longueur du tableau/chaine
-- `keys`, `values` - Cles/valeurs du tableau
-- `sort(key, direction)` - Trier
-- `slice(start, length)` - Extraire une portion
-- `merge(array)` - Fusionner
-- `unique` - Supprimer les doublons
-- `join(glue, lastGlue)` - Joindre en chaine
-- `chunk(size)` - Diviser en morceaux
-- `pluck(key)` - Extraire les valeurs par cle
-- `filter(key, value)` - Filtrer
-- `map(filter)` - Appliquer un filtre a chaque element
-- `group_by(key)` - Grouper par cle
-- `random` - Element aleatoire
-- `shuffle` - Melanger
+- `first`, `last` — Premier/dernier élément
+- `length` — Longueur du tableau/chaîne
+- `keys`, `values` — Clés/valeurs du tableau
+- `sort(key, direction)` — Trier
+- `slice(start, length)` — Extraire une portion
+- `merge(array)` — Fusionner
+- `unique` — Supprimer les doublons
+- `join(glue, lastGlue)` — Joindre en chaîne
+- `chunk(size)` — Diviser en morceaux
+- `pluck(key)` — Extraire les valeurs par clé
+- `filter(key, value)` — Filtrer
+- `map(filter)` — Appliquer un filtre à chaque élément
+- `group_by(key)` — Grouper par clé
+- `random` — Élément aléatoire
+- `shuffle` — Mélanger
 
 **Filtres de dates :**
-- `date(format)` - Formater une date
-- `ago` - Temps relatif (ex: "il y a 5 minutes")
-- `relative` - Date relative (ex: "hier")
+- `date(format)` — Formater une date
+- `ago` — Temps relatif (ex. : « il y a 5 minutes »)
+- `relative` — Date relative (ex. : « hier »)
 
 **Filtres d'encodage :**
-- `base64_encode`, `base64_decode` - Base64
-- `url_encode`, `url_decode` - Encodage URL
-- `json_encode(pretty)`, `json_decode` - JSON
-- `md5`, `sha1`, `sha256` - Hachage
+- `base64_encode`, `base64_decode` — Base64
+- `url_encode`, `url_decode` — Encodage URL
+- `json_encode(pretty)`, `json_decode` — JSON
+- `md5`, `sha1`, `sha256` — Hachage
 
 **Filtres HTML :**
-- `raw` - Sans echappement (attention !)
-- `escape(strategy)` - Echapper (html, js, css, url)
-- `striptags(allowed)` - Supprimer les balises HTML
-- `nl2br` - Nouvelles lignes en `<br>`
-- `spaceless` - Supprimer les espaces entre balises
+- `raw` — Sans échappement (attention !)
+- `escape(strategy)` — Échapper (html, js, css, url)
+- `striptags(allowed)` — Supprimer les balises HTML
+- `nl2br` — Nouvelles lignes en `<br>`
+- `spaceless` — Supprimer les espaces entre balises
 
 **Filtres de mise en forme HTML :**
-- `markdown` - Convertir Markdown en HTML (gras, italique, liens, titres, listes, code)
-- `linkify(target)` - Convertir automatiquement URLs et emails en liens cliquables
-- `list(type, class)` - Convertir un tableau en liste HTML (`<ul>` ou `<ol>`)
-- `table(hasHeader, class)` - Convertir un tableau 2D en table HTML
-- `attributes` - Convertir un tableau en attributs HTML
-- `wrap(tag, class, id)` - Envelopper le contenu dans une balise HTML
-- `highlight(term, class)` - Surligner les termes recherchés avec `<mark>`
-- `paragraph`, `p` - Convertir les blocs de texte en paragraphes `<p>`
-- `heading`, `h` - Créer un titre HTML (h1-h6) : `[[ titre | h(2) ]]`
-- `anchor`, `a` - Créer un lien : `[[ url | a("Cliquez ici") ]]`
-- `excerpt_html(length, suffix)` - Extraire le texte et créer un extrait
-- `class_list` - Construire une chaîne de classes CSS à partir d'un tableau
+- `markdown` — Convertir Markdown en HTML (gras, italique, liens, titres, listes, code)
+- `linkify(target)` — Convertir automatiquement URLs et e-mails en liens cliquables
+- `list(type, class)` — Convertir un tableau en liste HTML (`<ul>` ou `<ol>`)
+- `table(hasHeader, class)` — Convertir un tableau 2D en table HTML
+- `attributes` — Convertir un tableau en attributs HTML
+- `wrap(tag, class, id)` — Envelopper le contenu dans une balise HTML
+- `highlight(term, class)` — Surligner les termes recherchés avec `<mark>`
+- `paragraph`, `p` — Convertir les blocs de texte en paragraphes `<p>`
+- `heading`, `h` — Créer un titre HTML (h1-h6) : `[[ titre | h(2) ]]`
+- `anchor`, `a` — Créer un lien : `[[ url | a("Cliquez ici") ]]`
+- `excerpt_html(length, suffix)` — Extraire le texte et créer un extrait
+- `class_list` — Construire une chaîne de classes CSS à partir d'un tableau
 
 **Filtres d'éléments HTML :**
-- `div(class, id)` - Envelopper dans `<div>` : `[[ contenu | div("container") ]]`
-- `span(class, id)` - Envelopper dans `<span>` : `[[ texte | span("highlight") ]]`
-- `strong(class)` - Envelopper dans `<strong>` : `[[ texte | strong ]]`
-- `em(class)` - Envelopper dans `<em>` (italique) : `[[ texte | em ]]`
-- `small(class)` - Envelopper dans `<small>` : `[[ texte | small ]]`
-- `code(language)` - Envelopper dans `<code>` : `[[ code | code("php") ]]`
-- `pre(class)` - Envelopper dans `<pre>` : `[[ texte | pre ]]`
-- `blockquote(cite, class)` - Créer une citation avec attribution optionnelle
-- `abbr(title)` - Créer une abréviation : `[[ "HTML" | abbr("HyperText Markup Language") ]]`
-- `time(format, class)` - Créer un élément `<time>` avec attribut datetime
-- `img(alt, class, lazy)` - Créer `<img>` : `[[ url | img("Texte alt", "photo", true) ]]`
-- `video(autoplay, loop, muted, class)` - Créer `<video>` avec contrôles
-- `audio(autoplay, loop, class)` - Créer `<audio>` avec contrôles
-- `iframe(title, class, lazy)` - Créer `<iframe>` avec allowfullscreen
-- `progress(max, class)` - Créer barre `<progress>` : `[[ 75 | progress ]]`
-- `meter(min, max, low, high)` - Créer jauge `<meter>`
-- `badge(variant)` - Créer badge : `[[ "Nouveau" | badge("success") ]]`
-- `button(type, class, disabled)` - Créer `<button>` : `[[ "Envoyer" | button("submit", "btn") ]]`
+- `div(class, id)` — Envelopper dans `<div>` : `[[ contenu | div("container") ]]`
+- `span(class, id)` — Envelopper dans `<span>` : `[[ texte | span("highlight") ]]`
+- `strong(class)` — Envelopper dans `<strong>` : `[[ texte | strong ]]`
+- `em(class)` — Envelopper dans `<em>` (italique) : `[[ texte | em ]]`
+- `small(class)` — Envelopper dans `<small>` : `[[ texte | small ]]`
+- `code(language)` — Envelopper dans `<code>` : `[[ code | code("php") ]]`
+- `pre(class)` — Envelopper dans `<pre>` : `[[ texte | pre ]]`
+- `blockquote(cite, class)` — Créer une citation avec attribution optionnelle
+- `abbr(title)` — Créer une abréviation : `[[ "HTML" | abbr("HyperText Markup Language") ]]`
+- `time(format, class)` — Créer un élément `<time>` avec attribut datetime
+- `img(alt, class, lazy)` — Créer `<img>` : `[[ url | img("Texte alt", "photo", true) ]]`
+- `video(autoplay, loop, muted, class)` — Créer `<video>` avec contrôles
+- `audio(autoplay, loop, class)` — Créer `<audio>` avec contrôles
+- `iframe(title, class, lazy)` — Créer `<iframe>` avec allowfullscreen
+- `progress(max, class)` — Créer barre `<progress>` : `[[ 75 | progress ]]`
+- `meter(min, max, low, high)` — Créer jauge `<meter>`
+- `badge(variant)` — Créer badge : `[[ "Nouveau" | badge("success") ]]`
+- `button(type, class, disabled)` — Créer `<button>` : `[[ "Envoyer" | button("submit", "btn") ]]`
 
 ### Conditions
 
@@ -264,14 +264,14 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 [% if user.isLoggedIn %]
     <p>Bienvenue, [[ user.name ]] !</p>
 [% elseif user.isGuest %]
-    <p>Bonjour, invite !</p>
+    <p>Bonjour, invité !</p>
 [% else %]
     <p>Veuillez vous connecter.</p>
 [% endif %]
 
-<!-- Avec operateurs de comparaison -->
+<!-- Avec opérateurs de comparaison -->
 [% if count > 0 %]
-    <p>Vous avez [[ count ]] elements.</p>
+    <p>Vous avez [[ count ]] éléments.</p>
 [% endif %]
 
 [% if status == "active" %]
@@ -293,7 +293,7 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 ### Assignation de variables
 
 ```html
-[% set pageTitle = "Ma Page" %]
+[% set pageTitle = "Ma page" %]
 [% set count = 42 %]
 [% set isActive = true %]
 [% set userName = user.name %]
@@ -314,31 +314,31 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 [% include templateName %]
 ```
 
-### Heritage de templates
+### Héritage de templates
 
 **Template de base (`base.html.tpl`) :**
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>[% block title %]Titre par defaut[% endblock %]</title>
+    <title>[% block title %]Titre par défaut[% endblock %]</title>
 </head>
 <body>
     <header>
         [% block header %]
-            <h1>Mon Site Web</h1>
+            <h1>Mon site web</h1>
         [% endblock %]
     </header>
 
     <main>
         [% block content %]
-            Contenu par defaut
+            Contenu par défaut
         [% endblock %]
     </main>
 
     <footer>
         [% block footer %]
-            <p>&copy; 2025 Mon Site Web</p>
+            <p>&copy; 2025 Mon site web</p>
         [% endblock %]
     </footer>
 </body>
@@ -349,7 +349,7 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 ```html
 [% extends 'base.html.tpl' %]
 
-[% block title %][[ article.title ]] - Mon Blog[% endblock %]
+[% block title %][[ article.title ]] — Mon blog[% endblock %]
 
 [% block content %]
     <article>
@@ -360,7 +360,7 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 [% endblock %]
 ```
 
-### Heritage multi-niveaux avec bloc parent
+### Héritage multi-niveaux avec bloc parent
 
 ```html
 <!-- grandparent.tpl -->
@@ -372,7 +372,7 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 [% extends 'grandparent.tpl' %]
 [% block content %]
     <div class="wrapper">
-        [% parent %]  <!-- Inclut "Contenu de base" -->
+        [% parent %]  <!-- Inclut « Contenu de base » -->
     </div>
 [% endblock %]
 
@@ -380,7 +380,7 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 [% extends 'parent.tpl' %]
 [% block content %]
     <h1>Titre</h1>
-    [% parent %]  <!-- Inclut le contenu parent enveloppe -->
+    [% parent %]  <!-- Inclut le contenu parent enveloppé -->
 [% endblock %]
 ```
 
@@ -388,7 +388,7 @@ Les filtres transforment les valeurs des variables avec la syntaxe pipe :
 
 **Enregistrer une macro :**
 ```php
-$engine->registerMacro('url', function(string $routeName, array $params = []) {
+$engine->registerMacro('url', function (string $routeName, array $params = []) {
     return "/route/{$routeName}?" . http_build_query($params);
 });
 ```
@@ -398,7 +398,7 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 <a href="##url('blog.show', ['id' => article.id])##">Lire la suite</a>
 ```
 
-**Macros integrees :**
+**Macros intégrées :**
 
 #### Macros de base
 ```html
@@ -412,14 +412,14 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 
 #### Macros utilitaires
 ```html
-<!-- Generation UUID -->
-##uuid()##                              <!-- ex: 550e8400-e29b-41d4-a716-446655440000 -->
+<!-- Génération UUID -->
+##uuid()##                              <!-- ex. : 550e8400-e29b-41d4-a716-446655440000 -->
 
-<!-- Valeurs aleatoires -->
-##random()##                            <!-- Aleatoire 0-100 -->
-##random(1, 10)##                       <!-- Aleatoire 1-10 -->
-##random("string", 16)##                <!-- Chaine hexadecimale -->
-##random("alpha", 8)##                  <!-- Lettres aleatoires -->
+<!-- Valeurs aléatoires -->
+##random()##                            <!-- Aléatoire 0-100 -->
+##random(1, 10)##                       <!-- Aléatoire 1-10 -->
+##random("string", 16)##                <!-- Chaîne hexadécimale -->
+##random("alpha", 8)##                  <!-- Lettres aléatoires -->
 
 <!-- Lorem ipsum -->
 ##lorem()##                             <!-- 1 paragraphe -->
@@ -428,70 +428,70 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 
 <!-- Heure actuelle -->
 ##now()##                               <!-- Timestamp Unix -->
-##now("Y-m-d")##                        <!-- Date formatee -->
+##now("Y-m-d")##                        <!-- Date formatée -->
 ##now("iso")##                          <!-- ISO 8601 -->
 
 <!-- Pluralisation -->
-##pluralize(5, "article", "articles")## <!-- "5 articles" -->
+##pluralize(5, "article", "articles")## <!-- « 5 articles » -->
 
-<!-- Formatage monetaire -->
+<!-- Formatage monétaire -->
 ##money(99.99, "EUR")##                 <!-- 99,99 € -->
 ##money(50, "USD")##                    <!-- $50.00 -->
 
-<!-- Masquage de donnees -->
+<!-- Masquage de données -->
 ##mask("jean@exemple.fr", "email")##    <!-- j***@exemple.fr -->
 
 <!-- Manipulation de couleurs -->
 ##color("primary")##                    <!-- #4F46E5 -->
-##color("#FF0000", "lighten", 20)##     <!-- Eclaircir de 20% -->
+##color("#FF0000", "lighten", 20)##     <!-- Éclaircir de 20 % -->
 
 <!-- Temps relatif -->
-##timeago(timestamp)##                  <!-- "il y a 5 minutes" -->
+##timeago(timestamp)##                  <!-- « il y a 5 minutes » -->
 
-<!-- Compte a rebours -->
-##countdown("2025-12-31")##             <!-- "28 jours, 5 heures" -->
+<!-- Compte à rebours -->
+##countdown("2025-12-31")##             <!-- « 28 jours, 5 heures » -->
 ```
 
-#### Macros de securite
+#### Macros de sécurité
 ```html
 <!-- Protection CSRF -->
-##csrf()##                              <!-- Champ input cache -->
+##csrf()##                              <!-- Champ input caché -->
 ##csrf("token")##                       <!-- Valeur du token uniquement -->
 ##csrf("meta")##                        <!-- Balise meta -->
 
 <!-- Nonce CSP -->
 ##nonce()##                             <!-- Valeur du nonce -->
-##nonce("script")##                     <!-- Attribut nonce="..." -->
+##nonce("script")##                     <!-- Attribut nonce="…" -->
 
 <!-- Protection anti-spam Honeypot -->
-##honeypot()##                          <!-- Champ honeypot cache -->
+##honeypot()##                          <!-- Champ honeypot caché -->
 ```
 
 #### Macros de formulaire
 ```html
-<!-- Elements input -->
+<!-- Éléments input -->
 ##input("email", "email")##
 ##input("nom", "text", "Jean")##
 
 <!-- Zone de texte -->
 ##textarea("message")##
 
-<!-- Liste deroulante -->
-##select("pays", pays, "FR", "Choisir...")##
+<!-- Liste déroulante -->
+##select("pays", pays, "FR", "Choisir…")##
 
-<!-- Cases a cocher & Boutons radio -->
+<!-- Cases à cocher et boutons radio -->
 ##checkbox("accepter", "1", false, "J'accepte")##
 ##radio("genre", "homme", false, "Homme")##
 
-<!-- Autres elements -->
-##label("email", "Adresse email")##
+<!-- Autres éléments -->
+##label("email", "Adresse e-mail")##
 ##hidden("user_id", "123")##
-##method("PUT")##                       <!-- Spoofing de methode -->
+##method("PUT")##                       <!-- Spoofing de méthode -->
 ```
 
 #### Macros HTML/Meta
 ```html
-<!-- Script & Style -->
+<!-- Script et style -->
 ##script("/js/app.js", "defer")##
 ##style("/css/app.css")##
 
@@ -514,12 +514,12 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 <!-- Fil d'Ariane -->
 ##breadcrumbs(items)##
 
-<!-- Icones -->
+<!-- Icônes -->
 ##icon("user")##                        <!-- Heroicons outline -->
 ##icon("fa-home", "fa")##               <!-- Font Awesome -->
 ```
 
-#### Macros Image/Media
+#### Macros image/média
 ```html
 <!-- Gravatar -->
 ##gravatar("email@exemple.fr", 200)##
@@ -534,7 +534,7 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 ##qrcode("https://exemple.fr")##
 ```
 
-#### Macros d'integration
+#### Macros d'intégration
 ```html
 <!-- YouTube -->
 ##youtube("dQw4w9WgXcQ")##
@@ -545,7 +545,7 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 
 #### Macros de partage social
 ```html
-##share("twitter", "https://exemple.fr", "Regardez ca !")##
+##share("twitter", "https://exemple.fr", "Regardez ça !")##
 ##share("facebook", "https://exemple.fr")##
 ##share("linkedin", "https://exemple.fr", "Titre")##
 ##share("email", "https://exemple.fr", "Sujet", "Corps")##
@@ -558,16 +558,16 @@ $engine->registerMacro('url', function(string $routeName, array $params = []) {
 
 | Composant | Description |
 |-----------|-------------|
-| `TemplateParser` | Analyse le source du template en composants structures |
+| `TemplateParser` | Analyse le source du template en composants structurés |
 | `TemplateCompiler` | Compile la syntaxe du template en code PHP |
 | `TemplateRenderer` | Rend les templates avec injection de variables |
-| `InheritanceResolver` | Gere l'heritage multi-niveaux des templates |
-| `FilterRegistry` | Gestion centralisee des filtres avec 50+ filtres integres |
-| `FilesystemCache` | Cache de templates base sur le systeme de fichiers |
-| `CacheWarmer` | Precompile les templates pour la production |
-| `MacroRegistry` | Gestion centralisee des macros |
-| `PathValidator` | Securite : empeche la traversee de repertoire |
-| `HtmlEscaper` | Securite : protection XSS |
+| `InheritanceResolver` | Gère l'héritage multi-niveaux des templates |
+| `FilterRegistry` | Gestion centralisée des filtres avec 50+ filtres intégrés |
+| `FilesystemCache` | Cache de templates basé sur le système de fichiers |
+| `CacheWarmer` | Précompile les templates pour la production |
+| `MacroRegistry` | Gestion centralisée des macros |
+| `PathValidator` | Sécurité : empêche la traversée de répertoire |
+| `HtmlEscaper` | Sécurité : protection XSS |
 
 ### Exceptions
 
@@ -584,19 +584,19 @@ try {
     // Le fichier template n'existe pas
 } catch (SyntaxException $e) {
     // Le template contient des erreurs de syntaxe
-    echo "Erreur a la ligne " . $e->getLineNumber();
+    echo "Erreur à la ligne " . $e->getLineNumber();
 } catch (CircularInheritanceException $e) {
-    // Heritage circulaire detecte (ex: A etend B etend A)
-    echo "Chaine : " . implode(' -> ', $e->getInheritanceChain());
+    // Héritage circulaire détecté (ex. : A étend B étend A)
+    echo "Chaîne : " . implode(' -> ', $e->getInheritanceChain());
 } catch (MacroNotFoundException $e) {
-    // Macro non enregistree
+    // Macro non enregistrée
     echo "Macro inconnue : " . $e->getMacroName();
 }
 ```
 
-## Utilisation avancee
+## Utilisation avancée
 
-### Classes de macros personnalisees
+### Classes de macros personnalisées
 
 ```php
 <?php
@@ -629,16 +629,16 @@ use Lunar\Template\Macro\DateMacro;
 
 $registry = new MacroRegistry();
 $registry
-    ->register('greet', fn(string $name) => "Bonjour, $name!")
+    ->register('greet', fn (string $name) => "Bonjour, $name !")
     ->registerInstance(new DateMacro('Y-m-d', 'Europe/Paris'));
 
-// Verifier si une macro existe
+// Vérifier si une macro existe
 if ($registry->has('greet')) {
     $result = $registry->call('greet', ['Monde']);
 }
 ```
 
-### Filtres personnalises
+### Filtres personnalisés
 
 ```php
 <?php
@@ -662,16 +662,16 @@ class HighlightFilter implements FilterInterface
 $renderer->registerFilterInstance(new HighlightFilter());
 
 // Ou enregistrer un simple callable
-$renderer->registerFilter('double', fn($value) => $value * 2);
+$renderer->registerFilter('double', fn ($value) => $value * 2);
 ```
 
 **Utilisation dans un template :**
 ```html
-<p>[[ text | highlight("terme recherche") ]]</p>
+<p>[[ text | highlight("terme recherché") ]]</p>
 <p>Total : [[ count | double ]]</p>
 ```
 
-### Directives personnalisees
+### Directives personnalisées
 
 ```php
 use Lunar\Template\Compiler\Directive\DirectiveInterface;
@@ -696,15 +696,15 @@ class UppercaseDirective implements DirectiveInterface
 use Lunar\Template\Cache\FilesystemCache;
 use Lunar\Template\Cache\CacheWarmer;
 
-// Creer le cache
+// Créer le cache
 $cache = new FilesystemCache('/chemin/vers/cache');
 
-// Verifier si en cache et a jour
+// Vérifier si en cache et à jour
 if ($cache->has('template-key', filemtime($templateFile))) {
     $compiled = $cache->get('template-key');
 }
 
-// Prechauffer tous les templates
+// Préchauffer tous les templates
 $warmer = new CacheWarmer('/chemin/vers/templates', $cache);
 $results = $warmer->warmRecursive();
 
@@ -713,22 +713,22 @@ foreach ($results as $template => $success) {
 }
 ```
 
-## Securite
+## Sécurité
 
-- **Protection XSS** : Toutes les variables sont automatiquement echappees en HTML par defaut
-- **Validation des chemins** : Les chemins de templates sont valides pour prevenir les attaques de traversee de repertoire
-- **Compilation securisee** : Les templates compiles sont stockes uniquement dans les repertoires de cache designes
-- **Detection d'heritage circulaire** : Empeche les boucles infinies dans l'heritage de templates
+- **Protection XSS** : toutes les variables sont automatiquement échappées en HTML par défaut
+- **Validation des chemins** : les chemins de templates sont validés pour prévenir les attaques de traversée de répertoire
+- **Compilation sécurisée** : les templates compilés sont stockés uniquement dans les répertoires de cache désignés
+- **Détection d'héritage circulaire** : empêche les boucles infinies dans l'héritage de templates
 
 ## Performance
 
-- **Cache intelligent** : Les templates sont recompiles uniquement lorsque la source change
-- **Prechauffage du cache** : Precompilez tous les templates lors du deploiement
-- **Compilation optimisee** : Analyse efficace basee sur les expressions regulieres
-- **Memoire efficace** : Empreinte memoire minimale
-- **Compatible OPcache** : Fonctionne parfaitement avec PHP OPcache
+- **Cache intelligent** : les templates sont recompilés uniquement lorsque la source change
+- **Préchauffage du cache** : précompilez tous les templates lors du déploiement
+- **Compilation optimisée** : analyse efficace basée sur les expressions régulières
+- **Mémoire efficace** : empreinte mémoire minimale
+- **Compatible OPcache** : fonctionne parfaitement avec PHP OPcache
 
-## Integration avec les frameworks
+## Intégration avec les frameworks
 
 ### Laravel
 
@@ -740,7 +740,7 @@ $this->app->singleton(TemplateRenderer::class, function ($app) {
         storage_path('framework/cache/templates')
     );
 
-    $renderer->registerMacro('route', fn($name) => route($name));
+    $renderer->registerMacro('route', fn ($name) => route($name));
 
     return $renderer;
 });
@@ -757,32 +757,40 @@ services:
             $cachePath: '%kernel.cache_dir%/templates'
 ```
 
-## Prerequis
+## Prérequis
 
 - **PHP 8.3+**
-- **ext-mbstring** (pour la gestion des chaines)
+- **ext-mbstring** (pour la gestion des chaînes)
 
 ## Contribution
 
-Les contributions sont les bienvenues ! Veuillez lire notre [Guide de contribution](CONTRIBUTING.md) pour plus de details.
+Les contributions sont les bienvenues ! Veuillez lire notre [Guide de contribution](CONTRIBUTING.md) pour plus de détails.
 
 ## Licence
 
-Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de details.
+Ce projet est sous licence MIT — voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ## Journal des modifications
 
+### v1.5.0 (en préparation)
+- **Commentaires de template** : `[# ... #]` (multi-lignes, jamais émis dans la sortie HTML)
+- **Appels de méthode** : `[[ obj.method() ]]` compile vers `$obj->method()`
+- **Filtre `|raw` inline** : `[[ html|raw ]]` court-circuite l'échappement HTML
+- **Auto-extension `.tpl`** : `[% extends 'base' %]` résout `base.tpl` automatiquement
+- **Tokens autorisés dans `<script>`/`<style>`** : permet l'injection de variables et conditions
+- **Fix regex** : détection des chaînes dans `convertMacroArgument` corrigée
+
 ### v1.4.0
-- **Syntaxe de sortie brute** : `[[! contenu !]]` pour affichage sans echappement
-- **40+ Nouvelles Macros** :
+- **Syntaxe de sortie brute** : `[[! contenu !]]` pour affichage sans échappement
+- **40+ nouvelles macros** :
   - Utilitaires : `uuid`, `random`, `lorem`, `now`, `dump`, `json`, `pluralize`, `money`, `mask`, `initials`, `color`, `timeago`, `countdown`
-  - Securite : `csrf`, `nonce`, `honeypot`
+  - Sécurité : `csrf`, `nonce`, `honeypot`
   - Formulaires : `input`, `textarea`, `select`, `checkbox`, `radio`, `label`, `hidden`, `method`
   - HTML/Meta : `script`, `style`, `meta`, `og`, `twitter`, `canonical`, `favicon`, `schema`, `breadcrumbs`, `icon`
-  - Image/Media : `gravatar`, `avatar`, `placeholder`, `qrcode`
-  - Integration : `youtube`, `vimeo`
+  - Image/média : `gravatar`, `avatar`, `placeholder`, `qrcode`
+  - Intégration : `youtube`, `vimeo`
   - Social : `share` (twitter, facebook, linkedin, email, whatsapp, telegram, reddit, pinterest)
-- **DefaultMacros** : Enregistrement de toutes les macros integrees en une fois
+- **DefaultMacros** : enregistrement de toutes les macros intégrées en une fois
 
 ### v1.3.0
 - **Filtres de mise en forme HTML** : 12 filtres pour la génération HTML
@@ -808,24 +816,24 @@ Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de
 
 ### v1.1.0
 - Architecture modulaire (Parser, Compiler, Renderer)
-- Heritage multi-niveaux avec `[% parent %]`
+- Héritage multi-niveaux avec `[% parent %]`
 - Directive `[% set %]` pour l'assignation de variables
 - Directive `[% include %]` pour l'inclusion de templates
-- `MacroRegistry` pour la gestion centralisee des macros
+- `MacroRegistry` pour la gestion centralisée des macros
 - `DateMacro` pour le formatage de date
 - `CacheInterface` et `FilesystemCache`
-- `CacheWarmer` pour la precompilation des templates
-- `InheritanceResolver` avec detection circulaire
-- 100% de couverture de tests avec PHPStan niveau 7
+- `CacheWarmer` pour la précompilation des templates
+- `InheritanceResolver` avec détection circulaire
+- 100 % de couverture de tests avec PHPStan niveau 7
 
 ### v1.0.0
 - Version initiale
-- Systeme d'heritage de templates
-- Systeme de blocs
-- Systeme de macros
+- Système d'héritage de templates
+- Système de blocs
+- Système de macros
 - Cache intelligent
 - Protection XSS
-- Conception independante des frameworks
+- Conception indépendante des frameworks
 
 ---
 
