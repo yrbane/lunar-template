@@ -338,6 +338,46 @@ class TemplateCompilerTest extends TestCase
     }
 
     /**
+     * Issue #16 : la forme `[% for k, v in map %]` doit être compilée en
+     * `foreach($map as $k => $v)`. Avant le correctif, seul le `endfor` était
+     * traité → parse error PHP (`endforeach` orphelin).
+     */
+    public function testCompileForLoopKeyValue(): void
+    {
+        $result = $this->compiler->compile('[% for k, v in map %][[ k ]]=[[ v ]][% endfor %]');
+
+        $this->assertStringNotContainsString('[% for', $result);
+        $this->assertStringContainsString('foreach(($map ?? []) as $k => $v)', $result);
+        $this->assertStringContainsString('<?php endforeach; ?>', $result);
+    }
+
+    public function testCompileForLoopKeyValueWithDollarPrefix(): void
+    {
+        $result = $this->compiler->compile('[% for $k, $v in $map %][% endfor %]');
+
+        $this->assertStringContainsString('foreach(($map ?? []) as $k => $v)', $result);
+    }
+
+    public function testCompileForLoopKeyValueOnDottedExpression(): void
+    {
+        $result = $this->compiler->compile('[% for k, v in seo.og %][% endfor %]');
+
+        // L'accès pointé doit traverser Access::get (issue #14).
+        $this->assertStringContainsString('Access::get($seo, \'og\')', $result);
+        $this->assertStringContainsString('as $k => $v', $result);
+    }
+
+    public function testCompileForLoopSingleVariableStillWorks(): void
+    {
+        // Régression : la forme historique `for x in xs` ne doit pas être
+        // affectée par la nouvelle regex.
+        $result = $this->compiler->compile('[% for item in items %][[ item ]][% endfor %]');
+
+        $this->assertStringContainsString('foreach(($items ?? []) as $item)', $result);
+        $this->assertStringNotContainsString('=>', $result);
+    }
+
+    /**
      * OCP : un consumer doit pouvoir enregistrer une directive custom.
      */
     public function testCustomDirectiveCanBeRegistered(): void

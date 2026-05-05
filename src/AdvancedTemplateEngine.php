@@ -525,13 +525,23 @@ class AdvancedTemplateEngine
         $source = preg_replace('/\[%\s*else\s*%\]/', '<?php else: ?>', $source);
         $source = preg_replace('/\[%\s*endif\s*%\]/', '<?php endif; ?>', $source);
 
-        // Traitement des boucles.
-        $source = preg_replace_callback('/\[%\s*for\s+(\S+)\s+in\s+(\S+)\s*%\]/', function ($matches) {
-            $variable = ltrim($matches[1], '$');
-            $array = $this->addDollarToVariables($matches[2]);
+        // Traitement des boucles. Supporte la forme simple `for x in xs` et
+        // la forme clé/valeur `for k, v in map` (issue #16).
+        $source = preg_replace_callback(
+            '/\[%\s*for\s+(?:(\S+)\s*,\s*)?(\S+)\s+in\s+(\S+)\s*%\]/',
+            function ($matches) {
+                $hasKey = $matches[1] !== '';
+                $keyVar = $hasKey ? ltrim($matches[1], '$') : null;
+                $valueVar = ltrim($matches[2], '$');
+                $array = $this->addDollarToVariables($matches[3]);
 
-            return '<?php foreach((' . $array . ' ?? []) as $' . $variable . '): ?>';
-        }, $source);
+                $head = '<?php foreach((' . $array . ' ?? []) as ';
+                $head .= $hasKey ? '$' . $keyVar . ' => $' . $valueVar : '$' . $valueVar;
+
+                return $head . '): ?>';
+            },
+            $source,
+        );
         $source = preg_replace('/\[%\s*endfor\s*%\]/', '<?php endforeach; ?>', $source);
 
         // Traitement des macros avec la syntaxe ##macroName(arg1, arg2)##.

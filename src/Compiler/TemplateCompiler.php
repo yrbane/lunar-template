@@ -381,19 +381,34 @@ class TemplateCompiler implements CompilerInterface
 
     /**
      * Compile loop statements.
+     *
+     * Supporte deux formes :
+     *  - `[% for value in expr %]`         → foreach (... as $value)
+     *  - `[% for key, value in expr %]`    → foreach (... as $key => $value)  (issue #16)
      */
     private function compileLoops(string $source): string
     {
-        // for ... in ...
-        $source = (string) preg_replace_callback('/\[%\s*for\s+(\S+)\s+in\s+(\S+)\s*%\]/', function ($matches) {
-            $variable = ltrim($matches[1], '$');
-            $arrayExpr = ltrim($matches[2], '$');
-            $array = $this->addDollarToVariables($arrayExpr);
+        $source = (string) preg_replace_callback(
+            '/\[%\s*for\s+(?:(\S+)\s*,\s*)?(\S+)\s+in\s+(\S+)\s*%\]/',
+            function ($matches) {
+                $hasKey = $matches[1] !== '';
+                $keyVar = $hasKey ? ltrim($matches[1], '$') : null;
+                $valueVar = ltrim($matches[2], '$');
+                $arrayExpr = ltrim($matches[3], '$');
+                $array = $this->addDollarToVariables($arrayExpr);
 
-            return '<?php foreach((' . $array . ' ?? []) as $' . $variable . '): ?>';
-        }, $source);
+                $head = '<?php foreach((' . $array . ' ?? []) as ';
+                if ($hasKey) {
+                    $head .= '$' . $keyVar . ' => $' . $valueVar;
+                } else {
+                    $head .= '$' . $valueVar;
+                }
 
-        // endfor
+                return $head . '): ?>';
+            },
+            $source,
+        );
+
         return (string) preg_replace('/\[%\s*endfor\s*%\]/', '<?php endforeach; ?>', $source);
     }
 

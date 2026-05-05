@@ -354,4 +354,24 @@ class TemplateRendererTest extends TestCase
 
         $this->assertSame('Hello', $result);
     }
+
+    /**
+     * Issue #16 : `[% for k, v in map %]` itère sur un tableau associatif.
+     */
+    public function testRenderForLoopKeyValue(): void
+    {
+        $this->createTemplate(
+            'meta.tpl',
+            '[% for k, v in og %]<meta property="[[ k ]]" content="[[ v ]]">[% endfor %]',
+        );
+
+        $result = $this->renderer->render('meta', [
+            'og' => ['og:title' => 'Lunar', 'og:type' => 'website'],
+        ]);
+
+        $this->assertSame(
+            '<meta property="og:title" content="Lunar"><meta property="og:type" content="website">',
+            $result,
+        );
+    }
 }
