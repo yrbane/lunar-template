@@ -15,6 +15,7 @@ use Lunar\Template\Cache\CacheInterface;
 use Lunar\Template\Cache\FilesystemCache;
 use Lunar\Template\Exception\TemplateException;
 use Lunar\Template\Macro\MacroInterface;
+use Lunar\Template\Plugin\PluginDiscovery;
 use Lunar\Template\Runtime\SourceMap;
 use ReflectionClass;
 use Throwable;
@@ -263,6 +264,35 @@ class AdvancedTemplateEngine
     {
         // Le tableau [$macro, 'execute'] est un callable valide SI la méthode est publique
         $this->registerMacro($macro->getName(), [$macro, 'execute']);
+    }
+
+    /**
+     * Découvre et enregistre toutes les macros déclarées par les packages
+     * tiers via `extra.lunar-template.macros` dans leur composer.json.
+     *
+     * @param string|null $vendorDir Chemin vers le dossier vendor/. Si null,
+     *                               tente de trouver vendor/ relativement à src/.
+     */
+    public function loadPluginMacros(?string $vendorDir = null): void
+    {
+        $discovery = new PluginDiscovery($vendorDir ?? $this->resolveVendorDir());
+        foreach ($discovery->discoverMacros() as $macro) {
+            $this->registerMacroInstance($macro);
+        }
+    }
+
+    private function resolveVendorDir(): string
+    {
+        // Cas 1 : projet en cours de dev (./vendor)
+        $candidate = \dirname(__DIR__) . '/vendor';
+        if (is_dir($candidate)) {
+            return $candidate;
+        }
+
+        // Cas 2 : installé comme dépendance (vendor/yrbane/lunar-template/src → vendor/)
+        $candidate = \dirname(__DIR__, 3);
+
+        return is_dir($candidate) ? $candidate : '';
     }
 
     /**
