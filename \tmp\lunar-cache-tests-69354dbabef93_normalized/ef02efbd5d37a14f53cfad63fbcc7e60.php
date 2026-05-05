@@ -1,1 +1,0 @@
-<?php // LUNAR_LINE:1:/tmp/lunar-template-tests-69354dbabef90/normalized.tpl ?>Normalized path test
