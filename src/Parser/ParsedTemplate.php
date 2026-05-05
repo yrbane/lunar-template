@@ -7,7 +7,7 @@ namespace Lunar\Template\Parser;
 /**
  * Represents a parsed template structure.
  */
-class ParsedTemplate
+final readonly class ParsedTemplate
 {
     /**
      * @param string $source Original template source
@@ -16,10 +16,10 @@ class ParsedTemplate
      * @param array<string, array<int, mixed>> $macros Macro calls found in template
      */
     public function __construct(
-        private readonly string $source,
-        private readonly array $blocks = [],
-        private readonly ?string $extends = null,
-        private readonly array $macros = [],
+        private string $source,
+        private array $blocks = [],
+        private ?string $extends = null,
+        private array $macros = [],
     ) {
     }
 

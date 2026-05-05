@@ -25,9 +25,9 @@ use Lunar\Template\Macro\MacroInterface;
  * individuellement, ce qui est suffisant pour la majorité des cas et
  * évite la traversée du filesystem.
  */
-final class PluginDiscovery
+final readonly class PluginDiscovery
 {
-    public function __construct(private readonly string $vendorDir)
+    public function __construct(private string $vendorDir)
     {
     }
 

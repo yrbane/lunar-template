@@ -7,13 +7,13 @@ namespace Lunar\Template\Security;
 /**
  * HTML escaper for safe template output.
  */
-class HtmlEscaper implements EscaperInterface
+final readonly class HtmlEscaper implements EscaperInterface
 {
     /**
      * @param string $charset Character encoding for escaping
      */
     public function __construct(
-        private readonly string $charset = 'UTF-8',
+        private string $charset = 'UTF-8',
     ) {
     }
 

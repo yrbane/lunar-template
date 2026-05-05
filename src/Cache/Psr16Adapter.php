@@ -16,14 +16,14 @@ use Psr\SimpleCache\CacheInterface as Psr16CacheInterface;
  * un répertoire local à la demande, en se ré-alignant sur le
  * timestamp stocké côté PSR-16 quand celui-ci est plus récent.
  */
-final class Psr16Adapter implements CacheInterface
+final readonly class Psr16Adapter implements CacheInterface
 {
     private string $writeDir;
 
     public function __construct(
-        private readonly Psr16CacheInterface $psr,
+        private Psr16CacheInterface $psr,
         string $writeDir,
-        private readonly string $extension = '.php',
+        private string $extension = '.php',
     ) {
         $this->writeDir = rtrim($writeDir, '/\\');
 

@@ -11,10 +11,10 @@ use Lunar\Template\Security\PathValidator;
 /**
  * Resolves template inheritance chains.
  */
-class InheritanceResolver
+final readonly class InheritanceResolver
 {
     public function __construct(
-        private readonly PathValidator $pathValidator,
+        private PathValidator $pathValidator,
     ) {
     }
 
