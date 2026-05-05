@@ -53,3 +53,11 @@ phpstan.neon.local
 # Temporary files
 *.tmp
 *.temp
+
+# Reports (générés)
+audit_report.html
+audit_report.*
+
+# Leaks de testPathNormalization (chemins Windows-style sur Linux)
+/\tmp/
+\tmp\*
