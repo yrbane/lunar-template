@@ -52,10 +52,37 @@ final class FilterRegistry
     public function get(string $name): FilterInterface|callable
     {
         if (!$this->has($name)) {
-            throw new TemplateException("Filter '$name' is not registered");
+            $message = "Filter '$name' is not registered";
+            $suggestion = $this->suggestSimilar($name);
+            if ($suggestion !== null) {
+                $message .= ". Did you mean '$suggestion' ?";
+            }
+            throw new TemplateException($message);
         }
 
         return $this->filters[$name];
+    }
+
+    /**
+     * Cherche un filtre dont le nom est proche (typo) via la distance de
+     * Levenshtein. Retourne null s'il n'y a pas de correspondance plausible.
+     */
+    private function suggestSimilar(string $name): ?string
+    {
+        $best = null;
+        $bestDistance = PHP_INT_MAX;
+        // Seuil : au plus 2 modifications, et < 50 % du nom
+        $threshold = (int) max(2, floor(\strlen($name) / 2));
+
+        foreach (array_keys($this->filters) as $candidate) {
+            $distance = levenshtein($name, $candidate);
+            if ($distance < $bestDistance && $distance <= $threshold) {
+                $bestDistance = $distance;
+                $best = $candidate;
+            }
+        }
+
+        return $best;
     }
 
     /**

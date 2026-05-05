@@ -56,6 +56,32 @@ class FilterRegistryTest extends TestCase
         $this->registry->get('nonexistent');
     }
 
+    public function testGetSuggestsClosestNameOnTypo(): void
+    {
+        $this->registry->register('highlight', fn ($v) => $v);
+        $this->registry->register('upper', fn ($v) => $v);
+
+        try {
+            $this->registry->get('hilight');
+            $this->fail('TemplateException attendue');
+        } catch (TemplateException $e) {
+            $this->assertStringContainsString("'hilight'", $e->getMessage());
+            $this->assertStringContainsString("Did you mean 'highlight'", $e->getMessage());
+        }
+    }
+
+    public function testGetDoesNotSuggestUnrelatedNames(): void
+    {
+        $this->registry->register('completely_different', fn ($v) => $v);
+
+        try {
+            $this->registry->get('xyz');
+            $this->fail('TemplateException attendue');
+        } catch (TemplateException $e) {
+            $this->assertStringNotContainsString('Did you mean', $e->getMessage());
+        }
+    }
+
     public function testApplyCallable(): void
     {
         $this->registry->register('upper', fn (string $value) => strtoupper($value));
