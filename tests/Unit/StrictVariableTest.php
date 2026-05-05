@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 class StrictVariableTest extends TestCase
 {
     private string $templateDir;
+
     private string $cacheDir;
 
     protected function setUp(): void
@@ -37,7 +38,7 @@ class StrictVariableTest extends TestCase
 
         $this->expectException(TemplateException::class);
         $this->expectExceptionMessage('Undefined variable "name"'); // Or similar message
-        
+
         $engine->render('test', ['other_var' => 'world']);
     }
 
@@ -50,7 +51,7 @@ class StrictVariableTest extends TestCase
 
         $this->expectException(TemplateException::class);
         $this->expectExceptionMessage('Undefined variable "name"'); // Modified to expect "Undefined" for null values
-        
+
         $engine->render('test', ['name' => null]);
     }
 
@@ -137,7 +138,7 @@ class StrictVariableTest extends TestCase
         $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
         $engine->setStrictVariables(true);
 
-        $lang = new readonly class('fr') {
+        $lang = new readonly class ('fr') {
             public function __construct(public string $code)
             {
             }
@@ -154,7 +155,7 @@ class StrictVariableTest extends TestCase
         if (!is_dir($dir)) {
             return;
         }
-        
+
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . '/' . $file;

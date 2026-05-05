@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 class SourceMapTest extends TestCase
 {
     private string $templateDir;
+
     private string $cacheDir;
 
     protected function setUp(): void
@@ -28,16 +29,14 @@ class SourceMapTest extends TestCase
         $this->removeDirectory($this->cacheDir);
     }
 
-
-
     public function testExceptionMapsToOriginalTemplateLine(): void
     {
         $templateContent = <<<'TPL'
-Line 1
-Line 2
-Line 3 [[ undefined_var ]] <-- Error on this line
-Line 4
-TPL;
+            Line 1
+            Line 2
+            Line 3 [[ undefined_var ]] <-- Error on this line
+            Line 4
+            TPL;
         file_put_contents($this->templateDir . '/error.tpl', $templateContent);
 
         $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
@@ -58,7 +57,7 @@ TPL;
         file_put_contents($this->templateDir . '/base.tpl', "<html>\n[% block content %]Default[% endblock %]\n</html>");
         file_put_contents(
             $this->templateDir . '/page.tpl',
-            "[% extends 'base.tpl' %]\n[% block content %]\nLine 3 of page: [[ undef ]]\n[% endblock %]"
+            "[% extends 'base.tpl' %]\n[% block content %]\nLine 3 of page: [[ undef ]]\n[% endblock %]",
         );
 
         $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
@@ -79,11 +78,11 @@ TPL;
         // L'erreur survient dans la base.tpl, pas dans le child.
         file_put_contents(
             $this->templateDir . '/base.tpl',
-            "<html>\nHeader\n[[ undef_in_base ]]\n</html>"
+            "<html>\nHeader\n[[ undef_in_base ]]\n</html>",
         );
         file_put_contents(
             $this->templateDir . '/page.tpl',
-            "[% extends 'base.tpl' %]"
+            "[% extends 'base.tpl' %]",
         );
 
         $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
@@ -103,7 +102,7 @@ TPL;
         if (!is_dir($dir)) {
             return;
         }
-        
+
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . '/' . $file;

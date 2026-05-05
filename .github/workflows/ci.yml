@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.3', '8.4']
+        php: ['8.3', '8.4', '8.5']
         stability: [prefer-stable]
         include:
           - php: '8.3'
@@ -47,8 +47,32 @@ jobs:
       - name: Install dependencies
         run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction --no-progress
 
+      - name: Validate composer.json
+        run: composer validate --strict --no-check-lock
+
       - name: Run tests
         run: vendor/bin/phpunit --colors=always
+
+  cs:
+    name: Coding Style (php-cs-fixer)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run php-cs-fixer (dry-run)
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
 
   phpstan:
     name: PHPStan

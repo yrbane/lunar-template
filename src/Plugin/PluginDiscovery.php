@@ -24,12 +24,11 @@ use Lunar\Template\Macro\MacroInterface;
  * à `composer install`) plutôt que de scanner chaque composer.json
  * individuellement, ce qui est suffisant pour la majorité des cas et
  * évite la traversée du filesystem.
- */
-/**
- * @note Pas marquée `readonly class` à cause d'un cache statique :
- *       PHP 8.5 interdit les valeurs par défaut sur les propriétés
- *       statiques d'une readonly class. La prop d'instance reste
- *       `private readonly` pour conserver l'esprit de MOD-03.
+ *
+ * Note: pas marquée `readonly class` à cause d'un cache statique. PHP 8.5
+ * interdit les valeurs par défaut sur les propriétés statiques d'une
+ * readonly class. La prop d'instance reste `private readonly` pour
+ * conserver l'esprit de MOD-03.
  */
 final class PluginDiscovery
 {
@@ -76,7 +75,9 @@ final class PluginDiscovery
 
     /**
      * @template T of object
+     *
      * @param class-string<T> $expectedInterface
+     *
      * @return list<T>
      */
     private function discover(string $key, string $expectedInterface): array

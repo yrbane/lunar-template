@@ -37,7 +37,7 @@ class AccessTest extends TestCase
 
     public function testGetReadsReadonlyDtoProperty(): void
     {
-        $dto = new readonly class('fr', 'ltr') {
+        $dto = new readonly class ('fr', 'ltr') {
             public function __construct(public string $code, public string $direction)
             {
             }
@@ -110,7 +110,7 @@ class AccessTest extends TestCase
 
     public function testCallMethodReturnsNullForMissingMethod(): void
     {
-        $obj = new \stdClass();
+        $obj = new stdClass();
 
         $this->assertNull(Access::callMethod($obj, 'nope'));
     }

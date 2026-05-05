@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Tests\Unit\Cache;
 
+use DateInterval;
 use Lunar\Template\Cache\CacheInterface;
 use Lunar\Template\Cache\Psr16Adapter;
 use PHPUnit\Framework\TestCase;
@@ -12,7 +13,9 @@ use Psr\SimpleCache\CacheInterface as Psr16CacheInterface;
 class Psr16AdapterTest extends TestCase
 {
     private string $tempDir;
+
     private Psr16CacheInterface $psr;
+
     private Psr16Adapter $adapter;
 
     protected function setUp(): void
@@ -120,7 +123,7 @@ class Psr16AdapterTest extends TestCase
                 return $this->data[$key] ?? $default;
             }
 
-            public function set(string $key, mixed $value, null|int|\DateInterval $ttl = null): bool
+            public function set(string $key, mixed $value, null|int|DateInterval $ttl = null): bool
             {
                 $this->data[$key] = $value;
 
@@ -151,7 +154,7 @@ class Psr16AdapterTest extends TestCase
                 return $result;
             }
 
-            public function setMultiple(iterable $values, null|int|\DateInterval $ttl = null): bool
+            public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
             {
                 foreach ($values as $k => $v) {
                     $this->data[$k] = $v;

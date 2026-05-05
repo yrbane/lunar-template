@@ -523,7 +523,7 @@ class FullTemplateSystemTest extends TestCase
         $template = '<html lang="[[ lang.code ]]" dir="[[ lang.direction ]]"></html>';
         file_put_contents($this->templatesDir . '/lang.tpl', $template);
 
-        $lang = new readonly class('fr', 'ltr') {
+        $lang = new readonly class ('fr', 'ltr') {
             public function __construct(public string $code, public string $direction)
             {
             }
@@ -539,7 +539,7 @@ class FullTemplateSystemTest extends TestCase
         $template = 'Auteur : [[ post.author.name ]]';
         file_put_contents($this->templatesDir . '/mixed.tpl', $template);
 
-        $post = new readonly class(['name' => 'Jean Dupont']) {
+        $post = new readonly class (['name' => 'Jean Dupont']) {
             public function __construct(public array $author)
             {
             }
@@ -555,7 +555,7 @@ class FullTemplateSystemTest extends TestCase
         $template = 'Pays : [[ data.lang.code ]]';
         file_put_contents($this->templatesDir . '/array-obj.tpl', $template);
 
-        $lang = new readonly class('en') {
+        $lang = new readonly class ('en') {
             public function __construct(public string $code)
             {
             }

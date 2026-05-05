@@ -334,7 +334,7 @@ class TemplateRenderer implements RendererInterface
     {
         if (preg_match('/\[%\s*extends\s+[\'"](.+?)[\'"]\s*%\]/', $source, $matches)) {
             $parentTemplate = $matches[1];
-            
+
             $source = (string) preg_replace('/\[%\s*extends\s+[\'"](.+?)[\'"]\s*%\]/', '', $source);
             $blocks = $this->extractBlocks($source);
 
@@ -344,7 +344,7 @@ class TemplateRenderer implements RendererInterface
             }
 
             // Add to dependencies
-            if (!in_array($parentFile, $dependencies, true)) {
+            if (!\in_array($parentFile, $dependencies, true)) {
                 $dependencies[] = $parentFile;
             }
 

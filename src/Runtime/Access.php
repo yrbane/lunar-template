@@ -50,7 +50,7 @@ final class Access
      */
     public static function callMethod(mixed $value, string $method, mixed ...$args): mixed
     {
-        if (\is_object($value) && \method_exists($value, $method)) {
+        if (\is_object($value) && method_exists($value, $method)) {
             return $value->{$method}(...$args);
         }
 
@@ -66,7 +66,7 @@ final class Access
     public static function has(mixed $value, string $key): bool
     {
         if (\is_object($value)) {
-            return isset($value->{$key}) || \property_exists($value, $key);
+            return isset($value->{$key}) || property_exists($value, $key);
         }
 
         if (\is_array($value)) {

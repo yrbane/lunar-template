@@ -25,6 +25,7 @@ class AttributeBag implements Stringable
     public function add(string $name, string|bool|int|float|null $value): self
     {
         $this->attributes[$name] = $value;
+
         return $this;
     }
 
@@ -57,7 +58,7 @@ class AttributeBag implements Stringable
             $safeKey = htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8');
             $safeValue = htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 
-            $html[] = sprintf('%s="%s"', $safeKey, $safeValue);
+            $html[] = \sprintf('%s="%s"', $safeKey, $safeValue);
         }
 
         return implode(' ', $html);

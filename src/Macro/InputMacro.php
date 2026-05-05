@@ -50,11 +50,11 @@ final class InputMacro implements MacroInterface
         }
 
         $legacyString = '';
-        if (is_array($extra)) {
+        if (\is_array($extra)) {
             foreach ($extra as $key => $val) {
                 $bag->add((string) $key, $val);
             }
-        } elseif (is_string($extra) && $extra !== '') {
+        } elseif (\is_string($extra) && $extra !== '') {
             $legacyString = ' ' . $extra;
         }
 

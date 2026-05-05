@@ -10,7 +10,9 @@ use PHPUnit\Framework\TestCase;
 class CacheInvalidationTest extends TestCase
 {
     private string $templateDir;
+
     private string $cacheDir;
+
     private AdvancedTemplateEngine $engine;
 
     protected function setUp(): void
@@ -34,7 +36,7 @@ class CacheInvalidationTest extends TestCase
     {
         // 1. Create Parent Template
         file_put_contents($this->templateDir . '/layout.tpl', 'Parent: [% block content %]Default[% endblock %]');
-        
+
         // 2. Create Child Template
         file_put_contents($this->templateDir . '/child.tpl', '[% extends "layout.tpl" %][% block content %]Child[% endblock %]');
 
@@ -63,7 +65,7 @@ class CacheInvalidationTest extends TestCase
         if (!is_dir($dir)) {
             return;
         }
-        
+
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . '/' . $file;

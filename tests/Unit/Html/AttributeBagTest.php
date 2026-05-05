@@ -19,7 +19,7 @@ class AttributeBagTest extends TestCase
 
         $this->assertEquals(
             'class="btn btn-primary" id="submit-btn" data-role="save"',
-            (string) $attributes
+            (string) $attributes,
         );
     }
 
@@ -67,7 +67,7 @@ class AttributeBagTest extends TestCase
 
         // Si on implemente juste un écrasement simple :
         $this->assertEquals('class="btn-primary"', (string) $attributes);
-        
+
         // Si on voulait une fusion intelligente, le test serait :
         // $this->assertEquals('class="btn btn-primary"', (string) $attributes);
     }

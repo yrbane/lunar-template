@@ -57,6 +57,7 @@ final class FilterRegistry
             if ($suggestion !== null) {
                 $message .= ". Did you mean '$suggestion' ?";
             }
+
             throw new TemplateException($message);
         }
 

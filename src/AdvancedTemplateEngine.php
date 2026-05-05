@@ -195,12 +195,12 @@ class AdvancedTemplateEngine
             }
             $dependencies = [];
             $compiled = $this->compileTemplate($source, $dependencies, $templateFile); // <<-- templateFile pour la source map
-            
+
             $header = '';
             if (!empty($dependencies)) {
                 $header = '<?php /* DEPENDENCIES: ' . implode(';', $dependencies) . ' */ ?>' . PHP_EOL;
             }
-            
+
             file_put_contents($compiledFile, $header . $compiled);
         }
 
@@ -229,11 +229,11 @@ class AdvancedTemplateEngine
             $originalFile = $resolved['file'] ?? $templateFile;
             $originalLine = $resolved['line'] ?? $e->getLine();
 
-            $errorMessage = sprintf(
+            $errorMessage = \sprintf(
                 'Error in template "%s" at line %s: %s',
                 basename($originalFile),
                 $originalLine,
-                $e->getMessage()
+                $e->getMessage(),
             );
 
             throw new TemplateException($errorMessage, 0, $e);
@@ -315,7 +315,7 @@ class AdvancedTemplateEngine
 
         // Si c'est un callable de type [object, 'execute'] (MacroInterface),
         // on passe le tableau d'arguments directement
-        if (is_array($callback) && isset($callback[0]) && $callback[0] instanceof MacroInterface) {
+        if (\is_array($callback) && isset($callback[0]) && $callback[0] instanceof MacroInterface) {
             return $callback[0]->execute($args);
         }
 
@@ -349,7 +349,7 @@ class AdvancedTemplateEngine
 
                 return $placeholder;
             },
-            $source
+            $source,
         );
 
         // Protéger le contenu des balises <style>...</style> SAUF celles contenant des variables de template
@@ -366,7 +366,7 @@ class AdvancedTemplateEngine
 
                 return $placeholder;
             },
-            $source
+            $source,
         );
 
         return $source;
@@ -460,19 +460,19 @@ class AdvancedTemplateEngine
             $phpCode .= 'if ($engine->isStrictMode()) { ';
             // Vérifier si la variable finale est UNDEFINED
             $phpCode .= '    if (!isset(' . $phpVar . ')) { ';
-            $phpCode .= '        throw new Lunar\Template\Exception\TemplateException(sprintf("Undefined variable \"%s\" in strict mode.", \''. $expression . '\')); ';
+            $phpCode .= '        throw new Lunar\Template\Exception\TemplateException(sprintf("Undefined variable \"%s\" in strict mode.", \'' . $expression . '\')); ';
             $phpCode .= '    } ';
-            
+
             // Vérifier si la variable finale est NULL
             $phpCode .= '    if (' . $phpVar . ' === null) { ';
-            $phpCode .= '        throw new Lunar\Template\Exception\TemplateException(sprintf("Variable \"%s\" is null in strict mode.", \''. $expression . '\')); ';
+            $phpCode .= '        throw new Lunar\Template\Exception\TemplateException(sprintf("Variable \"%s\" is null in strict mode.", \'' . $expression . '\')); ';
             $phpCode .= '    } ';
             $phpCode .= '    echo htmlspecialchars((string)' . $phpVar . ', ENT_QUOTES, \'UTF-8\'); ';
             $phpCode .= '} else { ';// Else du if ($engine->isStrictMode())
             // Comportement par défaut (non strict): afficher une chaîne vide si indéfinie ou null.
             $phpCode .= '    echo htmlspecialchars((string)(' . $phpVar . ' ?? \'\'), ENT_QUOTES, \'UTF-8\'); ';
             $phpCode .= '} ?>'; // Fermeture du bloc PHP
-            
+
             return $phpCode;
         }, $source);
 
@@ -507,7 +507,7 @@ class AdvancedTemplateEngine
             // Parse les arguments pour créer un tableau PHP
             $parsedArgs = $this->parseMacroArguments($args);
 
-            return '<?= $this->callMacro(\''. $macroName . '\', ' . $parsedArgs . ') ?>';
+            return '<?= $this->callMacro(\'' . $macroName . '\', ' . $parsedArgs . ') ?>';
         }, $source);
 
         // Nettoyage des éventuelles balises de blocs non remplacées
@@ -547,7 +547,7 @@ class AdvancedTemplateEngine
                 throw TemplateException::parentTemplateNotFound($parentFile);
             }
 
-            if (!in_array($parentFile, $dependencies, true)) {
+            if (!\in_array($parentFile, $dependencies, true)) {
                 $dependencies[] = $parentFile;
             }
 
@@ -613,7 +613,7 @@ class AdvancedTemplateEngine
         $inQuotes = false;
         $quoteChar = '';
 
-        for ($i = 0; $i < strlen($args); $i++) {
+        for ($i = 0; $i < \strlen($args); $i++) {
             $char = $args[$i];
 
             if (!$inQuotes && ($char === '"' || $char === "'")) {
@@ -659,7 +659,7 @@ class AdvancedTemplateEngine
 
         // Si c'est un mot-cle PHP, le garder tel quel
         $phpKeywords = ['true', 'false', 'null'];
-        if (in_array(strtolower($arg), $phpKeywords, true)) {
+        if (\in_array(strtolower($arg), $phpKeywords, true)) {
             return $arg;
         }
 
@@ -691,7 +691,7 @@ class AdvancedTemplateEngine
         // Separe par le point
         $parts = explode('.', $expression);
 
-        if (count($parts) === 1) {
+        if (\count($parts) === 1) {
             // Pas de notation point, simple variable
             return '$' . $parts[0];
         }
@@ -762,7 +762,7 @@ class AdvancedTemplateEngine
 
         // Protege les chaines entre guillemets doubles et simples
         $expression = preg_replace_callback('/(["\'])(?:(?!\1)[^\\\\]|\\\\.)*\1/', function ($match) use (&$strings, &$index, $placeholder) {
-            $key = sprintf($placeholder, $index++);
+            $key = \sprintf($placeholder, $index++);
             $strings[$key] = $match[0];
 
             return $key;
@@ -774,7 +774,7 @@ class AdvancedTemplateEngine
 
             // Ne pas modifier les mots-clés PHP, constantes, ou appels de fonctions
             $phpKeywords = ['true', 'false', 'null', 'and', 'or', 'not', 'isset', 'empty', 'array', 'count'];
-            if (in_array(strtolower($var), $phpKeywords, true)) {
+            if (\in_array(strtolower($var), $phpKeywords, true)) {
                 return $var;
             }
 

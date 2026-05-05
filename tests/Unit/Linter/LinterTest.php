@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Lunar\Template\Tests\Unit\Linter;
 
-use Lunar\Template\Linter\LintIssue;
 use Lunar\Template\Linter\Linter;
 use PHPUnit\Framework\TestCase;
 
@@ -87,12 +86,12 @@ class LinterTest extends TestCase
 
         $issues = $this->linter->lint($source);
 
-        $this->assertGreaterThanOrEqual(1, count($issues));
+        $this->assertGreaterThanOrEqual(1, \count($issues));
     }
 
     public function testDetectsUnclosedVariable(): void
     {
-        $source = "Hello [[ name";
+        $source = 'Hello [[ name';
 
         $issues = $this->linter->lint($source);
 
@@ -102,7 +101,7 @@ class LinterTest extends TestCase
 
     public function testDetectsUnclosedComment(): void
     {
-        $source = "[# foo bar baz";
+        $source = '[# foo bar baz';
 
         $issues = $this->linter->lint($source);
 
@@ -121,7 +120,7 @@ class LinterTest extends TestCase
 
     public function testIssueExposesFile(): void
     {
-        $source = "[% if x %]";
+        $source = '[% if x %]';
         $issues = $this->linter->lint($source, 'page.tpl');
 
         $this->assertSame('page.tpl', $issues[0]->file);
