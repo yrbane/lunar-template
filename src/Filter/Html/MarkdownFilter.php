@@ -7,9 +7,17 @@ namespace Lunar\Template\Filter\Html;
 use Lunar\Template\Filter\AbstractFilter;
 
 /**
- * Convert basic Markdown syntax to HTML.
+ * Convert Markdown syntax to HTML.
  *
- * Supports: bold, italic, strikethrough, code, links, images, headers.
+ * Stratégie :
+ *  - Si `league/commonmark` est installé, on l'utilise (parser CommonMark
+ *    complet : tables, autolinks, footnotes via extensions, etc.).
+ *  - Sinon, fallback sur une implémentation regex maison qui couvre :
+ *    gras, italique, barré, code (inline + blocs fenced), liens, images,
+ *    titres, blockquotes, hr, listes ordonnées/non, autolinks bruts.
+ *
+ * Pour activer CommonMark :
+ *   composer require league/commonmark
  */
 final class MarkdownFilter extends AbstractFilter
 {
@@ -26,6 +34,29 @@ final class MarkdownFilter extends AbstractFilter
             return '';
         }
 
+        if (class_exists('League\\CommonMark\\CommonMarkConverter')) {
+            return $this->applyWithCommonMark($text);
+        }
+
+        return $this->applyWithRegex($text);
+    }
+
+    /**
+     * Conversion via league/commonmark si la lib est installée.
+     */
+    private function applyWithCommonMark(string $text): string
+    {
+        /** @var class-string $converterClass */
+        $converterClass = 'League\\CommonMark\\CommonMarkConverter';
+        $converter = new $converterClass();
+
+        // L'API de commonmark v2 expose convert() qui retourne un objet
+        // RenderedContentInterface avec __toString().
+        return (string) $converter->convert($text);
+    }
+
+    private function applyWithRegex(string $text): string
+    {
         // Process in order to avoid conflicts
         $text = $this->convertCodeBlocks($text);
         $text = $this->convertInlineCode($text);
@@ -39,6 +70,7 @@ final class MarkdownFilter extends AbstractFilter
         $text = $this->convertHorizontalRules($text);
         $text = $this->convertUnorderedLists($text);
         $text = $this->convertOrderedLists($text);
+        $text = $this->convertAutolinks($text);
 
         return $text;
     }
@@ -138,6 +170,46 @@ final class MarkdownFilter extends AbstractFilter
             },
             $text,
         );
+    }
+
+    /**
+     * Convertit les URLs nues en liens cliquables, hors balises HTML
+     * déjà créées (href="…") et hors blocs <code>/<pre>.
+     */
+    private function convertAutolinks(string $text): string
+    {
+        // Protège les attributs href, src et le contenu des balises <code>/<pre>
+        $placeholders = [];
+        $idx = 0;
+        $protect = function (string $match) use (&$placeholders, &$idx): string {
+            $key = "\x00LUNAR_PROTECT_{$idx}\x00";
+            $placeholders[$key] = $match;
+            $idx++;
+
+            return $key;
+        };
+
+        $protected = (string) preg_replace_callback(
+            '#(?:<a\b[^>]*>.*?</a>|<code\b[^>]*>.*?</code>|<pre\b[^>]*>.*?</pre>|href="[^"]*"|src="[^"]*")#is',
+            static fn (array $m) => $protect($m[0]),
+            $text,
+        );
+
+        // Autolink des URLs http(s) et www.
+        $linked = (string) preg_replace(
+            '#(?<![">])\b((?:https?://|www\.)[^\s<]+)#i',
+            '<a href="$1">$1</a>',
+            $protected,
+        );
+
+        // www.* sans schéma → préfixer http://
+        $linked = (string) preg_replace(
+            '#<a href="(www\.[^"]+)">#i',
+            '<a href="http://$1">',
+            $linked,
+        );
+
+        return strtr($linked, $placeholders);
     }
 
     private function convertOrderedLists(string $text): string

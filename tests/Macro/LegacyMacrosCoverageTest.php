@@ -44,26 +44,26 @@ class LegacyMacrosCoverageTest extends TestCase
      */
     public static function macroProvider(): iterable
     {
-        yield 'avatar'       => [AvatarMacro::class, 'avatar'];
-        yield 'breadcrumbs'  => [BreadcrumbsMacro::class, 'breadcrumbs'];
-        yield 'canonical'    => [CanonicalMacro::class, 'canonical'];
-        yield 'checkbox'     => [CheckboxMacro::class, 'checkbox'];
-        yield 'embed_vimeo'  => [EmbedVimeoMacro::class, 'vimeo'];
+        yield 'avatar' => [AvatarMacro::class, 'avatar'];
+        yield 'breadcrumbs' => [BreadcrumbsMacro::class, 'breadcrumbs'];
+        yield 'canonical' => [CanonicalMacro::class, 'canonical'];
+        yield 'checkbox' => [CheckboxMacro::class, 'checkbox'];
+        yield 'embed_vimeo' => [EmbedVimeoMacro::class, 'vimeo'];
         yield 'embed_youtube' => [EmbedYoutubeMacro::class, 'youtube'];
-        yield 'favicon'      => [FaviconMacro::class, 'favicon'];
-        yield 'hidden'       => [HiddenMacro::class, 'hidden'];
-        yield 'label'        => [LabelMacro::class, 'label'];
-        yield 'meta'         => [MetaMacro::class, 'meta'];
-        yield 'method'       => [MethodMacro::class, 'method'];
-        yield 'og'           => [OgMacro::class, 'og'];
-        yield 'placeholder'  => [PlaceholderMacro::class, 'placeholder'];
-        yield 'qrcode'       => [QrCodeMacro::class, 'qrcode'];
-        yield 'radio'        => [RadioMacro::class, 'radio'];
-        yield 'schema'       => [SchemaOrgMacro::class, 'schema'];
-        yield 'script'       => [ScriptMacro::class, 'script'];
-        yield 'style'        => [StyleMacro::class, 'style'];
-        yield 'textarea'     => [TextareaMacro::class, 'textarea'];
-        yield 'twitter'      => [TwitterCardMacro::class, 'twitter'];
+        yield 'favicon' => [FaviconMacro::class, 'favicon'];
+        yield 'hidden' => [HiddenMacro::class, 'hidden'];
+        yield 'label' => [LabelMacro::class, 'label'];
+        yield 'meta' => [MetaMacro::class, 'meta'];
+        yield 'method' => [MethodMacro::class, 'method'];
+        yield 'og' => [OgMacro::class, 'og'];
+        yield 'placeholder' => [PlaceholderMacro::class, 'placeholder'];
+        yield 'qrcode' => [QrCodeMacro::class, 'qrcode'];
+        yield 'radio' => [RadioMacro::class, 'radio'];
+        yield 'schema' => [SchemaOrgMacro::class, 'schema'];
+        yield 'script' => [ScriptMacro::class, 'script'];
+        yield 'style' => [StyleMacro::class, 'style'];
+        yield 'textarea' => [TextareaMacro::class, 'textarea'];
+        yield 'twitter' => [TwitterCardMacro::class, 'twitter'];
     }
 
     /**

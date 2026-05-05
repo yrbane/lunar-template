@@ -136,6 +136,42 @@ final class HtmlFormattingFiltersTest extends TestCase
         $this->assertSame('', $filter->apply(''));
     }
 
+    public function testMarkdownAutolinksBareUrls(): void
+    {
+        $filter = new MarkdownFilter();
+        $output = $filter->apply('Visit https://example.com for more.');
+
+        $this->assertStringContainsString('<a href="https://example.com">https://example.com</a>', $output);
+    }
+
+    public function testMarkdownAutolinkPrefixesWww(): void
+    {
+        $filter = new MarkdownFilter();
+        $output = $filter->apply('Voir www.example.com.');
+
+        $this->assertStringContainsString('href="http://www.example.com', $output);
+    }
+
+    public function testMarkdownAutolinkDoesNotDoubleLink(): void
+    {
+        $filter = new MarkdownFilter();
+        // Lien Markdown explicite — ne doit pas être re-linké
+        $output = $filter->apply('[Click](https://example.com)');
+
+        // Une seule balise <a>
+        $this->assertSame(1, substr_count($output, '<a '));
+    }
+
+    public function testMarkdownAutolinkPreservesCodeBlocks(): void
+    {
+        $filter = new MarkdownFilter();
+        $output = $filter->apply('Voir `https://example.com` dans le code.');
+
+        $this->assertStringContainsString('<code>https://example.com</code>', $output);
+        // Ne doit pas avoir de <a href dans le bloc code
+        $this->assertStringNotContainsString('<a href="https://example.com">', $output);
+    }
+
     // ==================== LinkifyFilter Tests ====================
 
     public function testLinkifyFilterName(): void
