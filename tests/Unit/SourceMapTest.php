@@ -52,6 +52,52 @@ TPL;
         }
     }
 
+    public function testSourceMapResolvesChildLineWithExtends(): void
+    {
+        // base.tpl avec un seul block, page.tpl étend et lève une erreur ligne 3.
+        file_put_contents($this->templateDir . '/base.tpl', "<html>\n[% block content %]Default[% endblock %]\n</html>");
+        file_put_contents(
+            $this->templateDir . '/page.tpl',
+            "[% extends 'base.tpl' %]\n[% block content %]\nLine 3 of page: [[ undef ]]\n[% endblock %]"
+        );
+
+        $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
+        $engine->setStrictVariables(true);
+
+        try {
+            $engine->render('page');
+            $this->fail('TemplateException attendue');
+        } catch (TemplateException $e) {
+            // L'erreur doit pointer vers page.tpl ligne 3 (et non vers la ligne du compilé).
+            $this->assertStringContainsString('page.tpl', $e->getMessage());
+            $this->assertStringContainsString('line 3', $e->getMessage());
+        }
+    }
+
+    public function testSourceMapResolvesParentLineWhenErrorInBaseTemplate(): void
+    {
+        // L'erreur survient dans la base.tpl, pas dans le child.
+        file_put_contents(
+            $this->templateDir . '/base.tpl',
+            "<html>\nHeader\n[[ undef_in_base ]]\n</html>"
+        );
+        file_put_contents(
+            $this->templateDir . '/page.tpl',
+            "[% extends 'base.tpl' %]"
+        );
+
+        $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
+        $engine->setStrictVariables(true);
+
+        try {
+            $engine->render('page');
+            $this->fail('TemplateException attendue');
+        } catch (TemplateException $e) {
+            $this->assertStringContainsString('base.tpl', $e->getMessage());
+            $this->assertStringContainsString('line 3', $e->getMessage());
+        }
+    }
+
     private function removeDirectory(string $dir): void
     {
         if (!is_dir($dir)) {

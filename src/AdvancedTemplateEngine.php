@@ -15,6 +15,7 @@ use Lunar\Template\Cache\CacheInterface;
 use Lunar\Template\Cache\FilesystemCache;
 use Lunar\Template\Exception\TemplateException;
 use Lunar\Template\Macro\MacroInterface;
+use Lunar\Template\Runtime\SourceMap;
 use ReflectionClass;
 use Throwable;
 
@@ -67,6 +68,28 @@ class AdvancedTemplateEngine
 
         // Cache filesystem aligné sur le cachePath
         $this->cacheStorage = new FilesystemCache($this->cachePath);
+    }
+
+    /**
+     * Extrait la ligne où l'erreur a été levée à l'intérieur du fichier compilé.
+     *
+     * Si l'exception provient directement du compiled file, $e->getLine() suffit.
+     * Sinon (l'erreur s'est propagée depuis un appel dans le compiled file),
+     * on parcourt la trace pour retrouver le frame correspondant.
+     */
+    private function extractCompiledLine(Throwable $e, string $compiledFile): ?int
+    {
+        if ($e->getFile() === $compiledFile) {
+            return $e->getLine();
+        }
+
+        foreach ($e->getTrace() as $frame) {
+            if (isset($frame['file']) && $frame['file'] === $compiledFile) {
+                return $frame['line'] ?? null;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -195,15 +218,20 @@ class AdvancedTemplateEngine
         } catch (Throwable $e) {
             ob_end_clean();
 
-            // Source Map Logic (à implémenter)
-            $originalLine = null;
-            $originalFile = $templateFile;
-            // ...
-            
+            // DX-02 : résoudre la ligne du compilé vers (file, line) du source d'origine
+            // via les marqueurs L:file:N injectés à la compilation.
+            $compiledLineThrown = $this->extractCompiledLine($e, $compiledFile);
+            $resolved = $compiledLineThrown !== null
+                ? SourceMap::resolve($compiledFile, $compiledLineThrown)
+                : null;
+
+            $originalFile = $resolved['file'] ?? $templateFile;
+            $originalLine = $resolved['line'] ?? $e->getLine();
+
             $errorMessage = sprintf(
                 'Error in template "%s" at line %s: %s',
-                basename($originalFile), // Nom de fichier simple
-                $originalLine ?? $e->getLine(), // Utiliser la ligne originale si trouvée
+                basename($originalFile),
+                $originalLine,
                 $e->getMessage()
             );
 
@@ -341,6 +369,12 @@ class AdvancedTemplateEngine
         // Suppression des commentaires de template [# ... #] (multi-lignes)
         // Effectuée en premier pour qu'aucun token interne ne soit interprété.
         $source = (string) preg_replace('/\[#.*?#\]/s', '', $source);
+
+        // Injection de marqueurs source-map pour permettre la résolution
+        // ligne-compilée → ligne-source-d'origine (DX-02).
+        if ($templateFilePath !== '') {
+            $source = SourceMap::inject($source, $templateFilePath);
+        }
 
         // Protéger le contenu des balises <script> et <style> du parsing
         $protectedContent = [];
@@ -493,6 +527,11 @@ class AdvancedTemplateEngine
                 throw TemplateException::unableToReadTemplate($parentFile);
                 // @codeCoverageIgnoreEnd
             }
+
+            // Strip des commentaires + marqueurs source-map sur le parent
+            // pour que les erreurs dans le parent soient résolues correctement.
+            $parentSource = (string) preg_replace('/\[#.*?#\]/s', '', $parentSource);
+            $parentSource = SourceMap::inject($parentSource, $parentFile);
 
             $parentSource = $this->processExtends($parentSource, $dependencies);
 
