@@ -557,6 +557,10 @@ $engine->registerMacro('url', function (string $routeName, array $params = []) {
 ##share("whatsapp", "https://exemple.fr", "Message")##
 ```
 
+## Référence API
+
+Index des classes publiques organisées par sous-système : [`docs/API.md`](docs/API.md).
+
 ## Architecture
 
 ### Composants
