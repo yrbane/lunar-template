@@ -16,6 +16,7 @@
 - **Systeme de blocs** - Surchargez les blocs parents avec `[% block content %]`
 - **Macros** - Composants reutilisables avec `##macroName(args)##`
 - **Directives** - `[% set %]` et `[% include %]` pour un controle avance
+- **Commentaires** - Strippes a la compilation avec `[# ... #]` (multi-lignes, jamais emis)
 - **Cache intelligent** - Compilation et mise en cache automatiques avec prechauffage
 - **Securise** - Protection XSS avec echappement HTML automatique et validation des chemins
 - **Syntaxe claire** - Syntaxe de template intuitive
@@ -99,7 +100,30 @@ $warmer->warmRecursive(); // Precompiler tous les templates
 
 <!-- Acces imbrique -->
 <p>[[ user.profile.email ]]</p>
+
+<!-- Appel de methode sur un objet -->
+<p>[[ user.getFullName() ]]</p>
+
+<!-- Filtre raw inline (pas d'echappement) -->
+<div>[[ trustedHtml|raw ]]</div>
 ```
+
+### Commentaires
+
+Utilisez `[# ... #]` pour ecrire des commentaires de template. Ils sont strippes a la compilation et n'apparaissent jamais dans la sortie rendue (contrairement a `<!-- ... -->`) :
+
+```html
+[# Ce bloc est invisible cote navigateur #]
+<h1>[[ title ]]</h1>
+
+[#
+  Les commentaires multi-lignes sont supportes.
+  Pratiques pour documenter des blocs complexes
+  sans fuiter l'explication dans le HTML genere.
+#]
+```
+
+> **Note** : Les tokens a l'interieur d'un commentaire (`[[ var ]]`, `[% if %]`, etc.) ne sont pas interpretes -- toute la region est supprimee avant compilation.
 
 ### Sortie brute (sans echappement)
 

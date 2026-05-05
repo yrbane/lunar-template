@@ -225,6 +225,20 @@ Use `[[! variable !]]` for trusted HTML:
 [[! trustedHtml !]]
 ```
 
+## Comments
+
+Use `[# ... #]` for template comments. They are stripped at compile time and never appear in the rendered output (unlike `<!-- HTML comments -->`):
+
+```html
+[# This explanatory note will not reach the browser #]
+<h1>[[ title ]]</h1>
+
+[#
+  Multi-line comments are supported.
+  Tokens inside ([[ var ]], [% if %]) are not interpreted.
+#]
+```
+
 ## Cache Management
 
 ### Clear All Cache
