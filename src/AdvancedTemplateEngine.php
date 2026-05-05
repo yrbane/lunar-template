@@ -11,6 +11,8 @@ declare(strict_types=1);
 namespace Lunar\Template;
 
 use Exception;
+use Lunar\Template\Cache\CacheInterface;
+use Lunar\Template\Cache\FilesystemCache;
 use Lunar\Template\Exception\TemplateException;
 use Lunar\Template\Macro\MacroInterface;
 use ReflectionClass;
@@ -38,6 +40,9 @@ class AdvancedTemplateEngine
     /** @var string Chemin absolu vers le dossier de cache des templates compilés */
     protected string $cachePath;
 
+    /** Stockage de cache des templates compilés (exposé pour les tests d'intégration) */
+    public CacheInterface $cacheStorage;
+
     /** @var array<string, callable> Liste des macros enregistrées */
     protected array $macros = [];
 
@@ -59,6 +64,9 @@ class AdvancedTemplateEngine
         // Vérification et création des répertoires
         $this->ensureDirectoryExists($this->templatePath, 'Template directory');
         $this->ensureDirectoryExists($this->cachePath, 'Cache directory', true);
+
+        // Cache filesystem aligné sur le cachePath
+        $this->cacheStorage = new FilesystemCache($this->cachePath);
     }
 
     /**

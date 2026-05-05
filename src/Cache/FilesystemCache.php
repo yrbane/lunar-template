@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Lunar\Template\Cache;
 
 use Lunar\Template\Exception\TemplateException;
-use Lunar\Template\Cache\CacheStorageInterface;
 
 /**
- * Filesystem-based template cache storage.
+ * Cache de templates compilés basé sur le système de fichiers.
  */
-class FilesystemCache implements CacheStorageInterface
+class FilesystemCache implements CacheInterface
 {
     private string $directory;
 
@@ -24,9 +23,6 @@ class FilesystemCache implements CacheStorageInterface
         $this->ensureDirectoryExists();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function get(string $key): ?string
     {
         $path = $this->getFilePath($key);
@@ -40,19 +36,22 @@ class FilesystemCache implements CacheStorageInterface
         return $content === false ? null : $content;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function set(string $key, string $content): void
+    {
+        file_put_contents($this->getFilePath($key), $content);
+    }
+
+    public function has(string $key, int $sourceTime): bool
     {
         $path = $this->getFilePath($key);
 
-        file_put_contents($path, $content);
+        if (!file_exists($path)) {
+            return false;
+        }
+
+        return filemtime($path) >= $sourceTime;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function delete(string $key): void
     {
         $path = $this->getFilePath($key);
@@ -62,9 +61,6 @@ class FilesystemCache implements CacheStorageInterface
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function clear(): void
     {
         $pattern = $this->directory . '/*' . $this->extension;
@@ -77,33 +73,23 @@ class FilesystemCache implements CacheStorageInterface
         }
     }
 
-    /**
-     * Get the cache directory.
-     */
+    public function getPath(string $key): ?string
+    {
+        $path = $this->getFilePath($key);
+
+        return file_exists($path) ? $path : null;
+    }
+
     public function getDirectory(): string
     {
         return $this->directory;
     }
 
-    /**
-     * Generate file path for a cache key.
-     */
     private function getFilePath(string $key): string
     {
         return $this->directory . '/' . $key . $this->extension;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function getCompiledFilePath(string $key): string
-    {
-        return $this->getFilePath($key);
-    }
-
-    /**
-     * Ensure cache directory exists.
-     */
     private function ensureDirectoryExists(): void
     {
         if (!is_dir($this->directory)) {
