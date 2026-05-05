@@ -383,8 +383,11 @@ class TemplateCompiler implements CompilerInterface
         $result = '$' . array_shift($parts);
 
         foreach ($parts as $part) {
-            if (str_contains($part, '(')) {
-                $result .= '->' . $part;
+            if (preg_match('/^(\w+)\((.*)\)$/', $part, $m)) {
+                $methodName = $m[1];
+                $argsRaw = trim($m[2]);
+                $argsPart = $argsRaw === '' ? '' : ', ' . $argsRaw;
+                $result = '\\Lunar\\Template\\Runtime\\Access::callMethod(' . $result . ', \'' . $methodName . '\'' . $argsPart . ')';
             } elseif (ctype_digit($part)) {
                 $result .= '[' . $part . ']';
             } else {

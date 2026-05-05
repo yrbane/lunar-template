@@ -66,11 +66,12 @@ class TemplateCompilerTest extends TestCase
         $this->assertStringContainsString('\\Lunar\\Template\\Runtime\\Access::get($lang, \'code\')', $result);
     }
 
-    public function testCompileMethodCallStillUsesArrow(): void
+    public function testCompileMethodCallRoutesViaCallMethod(): void
     {
+        // DX-01 : les appels de méthode passent par Access::callMethod (null-safe).
         $result = $this->compiler->compile('[[ user.getName() ]]');
 
-        $this->assertStringContainsString('$user->getName()', $result);
+        $this->assertStringContainsString('\\Lunar\\Template\\Runtime\\Access::callMethod($user, \'getName\')', $result);
     }
 
     public function testCompileIfCondition(): void

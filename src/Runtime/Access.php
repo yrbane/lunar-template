@@ -36,6 +36,28 @@ final class Access
     }
 
     /**
+     * Appelle une méthode sur un objet de manière null-safe.
+     *
+     * Si la cible n'est pas un objet, ou si la méthode n'existe pas,
+     * retourne `null` plutôt que de lever une `TypeError` PHP. Permet
+     * à `[[ obj.method() ]]` de gérer gracieusement `obj === null`
+     * en mode non-strict (en mode strict, le check `=== null` final
+     * détecte l'absence de retour).
+     *
+     * @param mixed $value Cible de l'appel
+     * @param string $method Nom de la méthode
+     * @param mixed ...$args Arguments à passer à la méthode
+     */
+    public static function callMethod(mixed $value, string $method, mixed ...$args): mixed
+    {
+        if (\is_object($value) && \method_exists($value, $method)) {
+            return $value->{$method}(...$args);
+        }
+
+        return null;
+    }
+
+    /**
      * Indique si la propriété ou la clé existe sur la cible.
      *
      * Renvoie `true` même si la valeur stockée est `null` (clé/propriété

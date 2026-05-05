@@ -24,10 +24,8 @@ class StrictVariableTest extends TestCase
 
     protected function tearDown(): void
     {
-        // Debug: Keep files for inspection
-        echo "\nDEBUG: Cache Dir: " . $this->cacheDir . "\n";
-        // $this->removeDirectory($this->templateDir);
-        // $this->removeDirectory($this->cacheDir);
+        $this->removeDirectory($this->templateDir);
+        $this->removeDirectory($this->cacheDir);
     }
 
     public function testUndefinedVariableThrowsExceptionInStrictMode(): void
@@ -76,6 +74,79 @@ class StrictVariableTest extends TestCase
 
         $output = $engine->render('test', ['name' => null]);
         $this->assertEquals('Hello .', $output);
+    }
+
+    public function testStrictMethodCallReturningNullThrows(): void
+    {
+        file_put_contents($this->templateDir . '/test.tpl', 'Result: [[ obj.maybeNull() ]]');
+
+        $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
+        $engine->setStrictVariables(true);
+
+        $obj = new class () {
+            public function maybeNull(): ?string
+            {
+                return null;
+            }
+        };
+
+        $this->expectException(TemplateException::class);
+        $this->expectExceptionMessage('obj.maybeNull()');
+
+        $engine->render('test', ['obj' => $obj]);
+    }
+
+    public function testStrictMethodCallSucceedsWithValidReturn(): void
+    {
+        file_put_contents($this->templateDir . '/test.tpl', 'Result: [[ obj.greet() ]]');
+
+        $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
+        $engine->setStrictVariables(true);
+
+        $obj = new class () {
+            public function greet(): string
+            {
+                return 'Hello';
+            }
+        };
+
+        $output = $engine->render('test', ['obj' => $obj]);
+        $this->assertSame('Result: Hello', $output);
+    }
+
+    public function testNonStrictMethodCallOnNullObjectDoesNotThrow(): void
+    {
+        // Comportement par défaut : null sur un objet absent → chaîne vide.
+        file_put_contents($this->templateDir . '/test.tpl', 'Result: [[ obj.greet() ]]');
+
+        $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
+        // Pas de mode strict.
+
+        // obj absent : Access::get(undefined, 'greet') retourne null,
+        // l'appel ->greet() ne se produit pas (l'expression entière vaut null via ?? '').
+        // En réalité on a $obj->greet() qui lève sur $obj null en non-strict :
+        // l'engine doit le tolérer en non-strict.
+        $output = $engine->render('test', ['obj' => null]);
+        $this->assertSame('Result: ', $output);
+    }
+
+    public function testStrictMissingObjectPropertyThrows(): void
+    {
+        file_put_contents($this->templateDir . '/test.tpl', 'Code: [[ lang.missing ]]');
+
+        $engine = new AdvancedTemplateEngine($this->templateDir, $this->cacheDir);
+        $engine->setStrictVariables(true);
+
+        $lang = new readonly class('fr') {
+            public function __construct(public string $code)
+            {
+            }
+        };
+
+        $this->expectException(TemplateException::class);
+        $this->expectExceptionMessage('lang.missing');
+
+        $engine->render('test', ['lang' => $lang]);
     }
 
     private function removeDirectory(string $dir): void

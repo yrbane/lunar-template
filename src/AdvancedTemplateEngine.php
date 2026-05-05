@@ -369,9 +369,9 @@ class AdvancedTemplateEngine
             // Convertit la notation point en acces tableau/objet PHP
             $phpVar = $this->convertDotNotation($expression);
 
-            // Une expression avec un appel de fonction (Access::get(...) ou ->method())
+            // Une expression avec un appel de fonction (Access::get, Access::callMethod, ->method())
             // ne peut pas être passée à isset() — PHP exige un véritable lvalue.
-            $isFunctionLike = str_contains($phpVar, '->') || str_contains($phpVar, 'Access::get');
+            $isFunctionLike = str_contains($phpVar, '->') || str_contains($phpVar, 'Access::');
 
             // Si |raw, pas d'échappement HTML
             if ($isRaw) {
@@ -632,9 +632,12 @@ class AdvancedTemplateEngine
 
         // Les autres elements deviennent des acces tableau, methodes ou hybrides
         foreach ($parts as $part) {
-            // Gere les appels de methodes (contient des parentheses)
-            if (str_contains($part, '(')) {
-                $result .= '->' . $part;
+            // Appel de methode (contient des parentheses) : null-safe via Access::callMethod
+            if (preg_match('/^(\w+)\((.*)\)$/', $part, $m)) {
+                $methodName = $m[1];
+                $argsRaw = trim($m[2]);
+                $argsPart = $argsRaw === '' ? '' : ', ' . $argsRaw;
+                $result = '\\Lunar\\Template\\Runtime\\Access::callMethod(' . $result . ', \'' . $methodName . '\'' . $argsPart . ')';
             } elseif (ctype_digit($part)) {
                 // Gere les index numeriques (tableau uniquement)
                 $result .= '[' . $part . ']';

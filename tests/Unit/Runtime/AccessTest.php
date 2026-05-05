@@ -94,4 +94,35 @@ class AccessTest extends TestCase
         $this->assertFalse(Access::has('scalar', 'anything'));
         $this->assertFalse(Access::has(null, 'anything'));
     }
+
+    public function testCallMethodInvokesExistingMethod(): void
+    {
+        $obj = new class () {
+            public function greet(string $who = 'World'): string
+            {
+                return "Hello, $who!";
+            }
+        };
+
+        $this->assertSame('Hello, World!', Access::callMethod($obj, 'greet'));
+        $this->assertSame('Hello, Jean!', Access::callMethod($obj, 'greet', 'Jean'));
+    }
+
+    public function testCallMethodReturnsNullForMissingMethod(): void
+    {
+        $obj = new \stdClass();
+
+        $this->assertNull(Access::callMethod($obj, 'nope'));
+    }
+
+    public function testCallMethodReturnsNullForNullValue(): void
+    {
+        $this->assertNull(Access::callMethod(null, 'anyMethod'));
+    }
+
+    public function testCallMethodReturnsNullForArrayValue(): void
+    {
+        // Un tableau n'a pas de méthode — null plutôt qu'un fatal PHP.
+        $this->assertNull(Access::callMethod(['key' => 'value'], 'anyMethod'));
+    }
 }
