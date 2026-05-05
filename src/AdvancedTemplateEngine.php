@@ -348,9 +348,22 @@ class AdvancedTemplateEngine
                 return '';
             }
 
+            // Vérifier si le filtre |raw est présent (pas d'échappement HTML)
+            $isRaw = false;
+            if (preg_match('/\|raw\s*$/', $expression)) {
+                $isRaw = true;
+                $expression = preg_replace('/\|raw\s*$/', '', $expression);
+                $expression = trim($expression);
+            }
+
             // Convertit la notation point en acces tableau/objet PHP
             $phpVar = $this->convertDotNotation($expression);
-            
+
+            // Si |raw, pas d'échappement HTML
+            if ($isRaw) {
+                return '<?= (string)(' . $phpVar . ' ?? \'\') ?>';
+            }
+
             // Injecter la logique du mode strict directement dans le code PHP généré
             $phpCode = '<?php ';
             $phpCode .= 'if ($engine->isStrictMode()) { ';
