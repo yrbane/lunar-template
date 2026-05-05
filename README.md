@@ -104,9 +104,14 @@ $warmer->warmRecursive(); // Precompile all templates
 <!-- Method call on object -->
 <p>[[ user.getFullName() ]]</p>
 
+<!-- Object property (DTO, readonly class) -->
+<p>[[ lang.code ]]</p>     <!-- works with both arrays AND objects -->
+
 <!-- Inline raw (no escaping) -->
 <div>[[ trustedHtml|raw ]]</div>
 ```
+
+> **Hybrid access**: dotted property notation works on both arrays and objects. `[[ user.name ]]` resolves to `$user['name']` if `$user` is an array, or `$user->name` if `$user` is an object (e.g. a `final readonly class` DTO). No controller-side conversion required.
 
 ### Comments
 
@@ -823,6 +828,16 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Changelog
+
+### v1.5.0 (in development)
+- **Template comments**: `[# ... #]` (multi-line, never emitted in the HTML output)
+- **Method calls**: `[[ obj.method() ]]` compiles to `$obj->method()`
+- **Hybrid array/object access**: `[[ obj.prop ]]` works on arrays AND objects (readonly DTOs) via a `Runtime\Access` helper (issue #14)
+- **Inline `|raw` filter**: `[[ html|raw ]]` bypasses HTML escaping
+- **Auto-extension `.tpl`**: `[% extends 'base' %]` resolves `base.tpl` automatically
+- **Tokens allowed inside `<script>`/`<style>`**: variables, conditions and macros (including in `src=`, `href=` attributes)
+- **Cache**: unified `CacheInterface` (methods `has()`, `getPath()`, `getDirectory()` part of the contract)
+- **Bugfix**: string detection regex in `convertMacroArgument`
 
 ### v1.4.0
 - **Raw Output Syntax**: `[[! content !]]` for unescaped output

@@ -104,9 +104,14 @@ $warmer->warmRecursive(); // Précompiler tous les templates
 <!-- Appel de méthode sur un objet -->
 <p>[[ user.getFullName() ]]</p>
 
+<!-- Propriété d'objet (DTO, readonly class) -->
+<p>[[ lang.code ]]</p>     <!-- fonctionne aussi bien avec un tableau qu'avec un objet -->
+
 <!-- Filtre raw inline (pas d'échappement) -->
 <div>[[ trustedHtml|raw ]]</div>
 ```
+
+> **Accès hybride** : la notation pointée fonctionne indifféremment sur les tableaux et les objets. `[[ user.name ]]` se résout en `$user['name']` si `$user` est un tableau, ou en `$user->name` si `$user` est un objet (par exemple un DTO `final readonly class`). Aucune conversion côté contrôleur n'est nécessaire.
 
 ### Commentaires
 
@@ -775,9 +780,11 @@ Ce projet est sous licence MIT — voir le fichier [LICENSE](LICENSE) pour plus 
 ### v1.5.0 (en préparation)
 - **Commentaires de template** : `[# ... #]` (multi-lignes, jamais émis dans la sortie HTML)
 - **Appels de méthode** : `[[ obj.method() ]]` compile vers `$obj->method()`
+- **Accès hybride array/objet** : `[[ obj.prop ]]` fonctionne sur les tableaux ET les objets (DTO `readonly`) via un helper `Runtime\Access` (issue #14)
 - **Filtre `|raw` inline** : `[[ html|raw ]]` court-circuite l'échappement HTML
 - **Auto-extension `.tpl`** : `[% extends 'base' %]` résout `base.tpl` automatiquement
-- **Tokens autorisés dans `<script>`/`<style>`** : permet l'injection de variables et conditions
+- **Tokens autorisés dans `<script>`/`<style>`** : permet l'injection de variables, conditions et macros (y compris dans les attributs `src=`, `href=`)
+- **Cache** : unification de l'interface `CacheInterface` (méthodes `has()`, `getPath()`, `getDirectory()` au contrat)
 - **Fix regex** : détection des chaînes dans `convertMacroArgument` corrigée
 
 ### v1.4.0

@@ -55,6 +55,7 @@ vendor/bin/php-cs-fixer fix           # formatage
 | `[[! var !]]` | Variable brute (sans échappement) |
 | `[[ var \| filtre ]]` | Variable filtrée |
 | `[[ var \| raw ]]` | Variable brute via filtre |
+| `[[ obj.prop ]]` | Accès hybride array/objet (issue #14, via `Runtime\Access::get`) |
 | `[[ obj.method() ]]` | Appel de méthode |
 | `[# ... #]` | Commentaire (multi-ligne, jamais émis) |
 | `[% if/elseif/else/endif %]` | Conditions |

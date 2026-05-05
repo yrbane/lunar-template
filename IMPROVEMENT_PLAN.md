@@ -16,11 +16,13 @@ Roadmap active du moteur de templates. Le plan d'audit initial (IMP-01..04) est 
 ### Récemment livré (décembre 2025 → mai 2026)
 
 - **Issue #13** : Commentaires `[# ... #]` (multi-ligne, jamais émis dans la sortie HTML)
+- **Issue #14** : Accès hybride array/objet `[[ obj.prop ]]` via `Runtime\Access::get` (DTO readonly supportés)
 - **Appels de méthode** : `[[ obj.method() ]]` compile vers `$obj->method()`
 - **Filtre `|raw` inline** : `[[ html|raw ]]` court-circuite l'échappement HTML
 - **Auto-extension `.tpl`** : `[% extends 'base' %]` résout `base.tpl` si nécessaire
 - **Fix regex** : `convertMacroArgument` détectait incorrectement les chaînes
-- **Préservation des tokens** : `[[ ]]` et `[% %]` autorisés dans `<script>`/`<style>`
+- **Préservation des tokens** : `[[ ]]`, `[% %]` et `##macro##` autorisés dans `<script>`/`<style>` (y compris dans les attributs)
+- **Milestone 1 — Stabilisation** : 4 chantiers livrés (cache, leaks, blocs hérités, exception type)
 - **Audit du dépôt** : suppression des artefacts SpecKit, des spécifications livrées et des leaks de cache de tests
 
 ---
