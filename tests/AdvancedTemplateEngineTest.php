@@ -439,7 +439,7 @@ class AdvancedTemplateEngineTest extends TestCase
 
     public function testPathNormalization(): void
     {
-        // Test with backslashes
+        // Test avec backslashes (chemin Windows-style)
         $engineWindows = new AdvancedTemplateEngine(
             str_replace('/', '\\', $this->templatesDir),
             str_replace('/', '\\', $this->cacheDir . '_normalized'),
@@ -449,6 +449,10 @@ class AdvancedTemplateEngineTest extends TestCase
 
         $result = $engineWindows->render('normalized');
         $this->assertSame('Normalized path test', $result);
+
+        // Garde anti-régression : aucune fuite de dossier "\tmp\..." dans le CWD
+        // (un str_replace mal cascadé créerait un répertoire littéral à la racine).
+        $this->assertDirectoryDoesNotExist(getcwd() . '/\\tmp');
 
         // Cleanup
         $this->removeDirectory($this->cacheDir . '_normalized');
