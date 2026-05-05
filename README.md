@@ -831,11 +831,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### v1.5.0 (in development)
 - **Template comments**: `[# ... #]` (multi-line, never emitted in the HTML output)
-- **Method calls**: `[[ obj.method() ]]` compiles to `$obj->method()`
+- **Method calls**: `[[ obj.method() ]]` routes through a null-safe helper (no more `TypeError` on null)
 - **Hybrid array/object access**: `[[ obj.prop ]]` works on arrays AND objects (readonly DTOs) via a `Runtime\Access` helper (issue #14)
 - **Inline `|raw` filter**: `[[ html|raw ]]` bypasses HTML escaping
 - **Auto-extension `.tpl`**: `[% extends 'base' %]` resolves `base.tpl` automatically
 - **Tokens allowed inside `<script>`/`<style>`**: variables, conditions and macros (including in `src=`, `href=` attributes)
+- **Complete source maps**: errors resolve to the original `.tpl` line, even across `extends` chains
+- **Static linter**: `lunar-template template:lint` reports unclosed blocks, orphan closes, and mismatched tokens without executing templates
 - **Cache**: unified `CacheInterface` (methods `has()`, `getPath()`, `getDirectory()` part of the contract)
 - **Bugfix**: string detection regex in `convertMacroArgument`
 

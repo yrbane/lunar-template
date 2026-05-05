@@ -779,11 +779,13 @@ Ce projet est sous licence MIT — voir le fichier [LICENSE](LICENSE) pour plus 
 
 ### v1.5.0 (en préparation)
 - **Commentaires de template** : `[# ... #]` (multi-lignes, jamais émis dans la sortie HTML)
-- **Appels de méthode** : `[[ obj.method() ]]` compile vers `$obj->method()`
+- **Appels de méthode** : `[[ obj.method() ]]` passe par un helper null-safe (plus de `TypeError` sur `null`)
 - **Accès hybride array/objet** : `[[ obj.prop ]]` fonctionne sur les tableaux ET les objets (DTO `readonly`) via un helper `Runtime\Access` (issue #14)
 - **Filtre `|raw` inline** : `[[ html|raw ]]` court-circuite l'échappement HTML
 - **Auto-extension `.tpl`** : `[% extends 'base' %]` résout `base.tpl` automatiquement
 - **Tokens autorisés dans `<script>`/`<style>`** : permet l'injection de variables, conditions et macros (y compris dans les attributs `src=`, `href=`)
+- **Source maps complètes** : les erreurs sont résolues vers la ligne d'origine du `.tpl`, même après héritage `extends`
+- **Linter statique** : `lunar-template template:lint` signale blocs non fermés, fermetures orphelines et tokens malformés sans exécuter les templates
 - **Cache** : unification de l'interface `CacheInterface` (méthodes `has()`, `getPath()`, `getDirectory()` au contrat)
 - **Fix regex** : détection des chaînes dans `convertMacroArgument` corrigée
 

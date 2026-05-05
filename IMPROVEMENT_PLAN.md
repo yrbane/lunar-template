@@ -2,7 +2,7 @@
 
 Roadmap active du moteur de templates. Le plan d'audit initial (IMP-01..04) est livré ; ce document trace les chantiers restants et les nouvelles priorités.
 
-**Dernière mise à jour** : 2026-05-05 (Milestone 1 livré)
+**Dernière mise à jour** : 2026-05-05 (Milestones 1 & 2 livrés)
 
 ---
 
@@ -61,40 +61,29 @@ Effet : -1 échec.
 
 ---
 
-## Milestone 2 — Mode strict & DX (Priorité Moyenne)
+## Milestone 2 — Mode strict & DX ✅ Livré (2026-05-05)
 
-### [DX-01] Mode strict pour les appels de méthode
+### [DX-01] Mode strict + null-safety pour les appels de méthode ✅
 
-**Type** : Feature — **Complexité** : 2/5 — **Statut** : 🟡 Idée
+`[[ obj.method() ]]` compilait en `$obj->method()` direct, ce qui :
+- levait une `TypeError` PHP non-interceptable proprement quand `$obj === null` en mode non-strict,
+- bypassait totalement le mode strict.
 
-**Contexte** :
-`[[ obj.method() ]]` compile vers `$obj->method() ?? ''`. En mode strict, la branche `isset()` est court-circuitée car invalide en PHP. Conséquence : on ne sait pas si `$obj` est null avant l'appel.
+Implémentation : helper `Runtime\Access::callMethod()` null-safe (variadic args). `convertDotNotation` route désormais les appels via `Access::callMethod($obj, 'method', args...)`. Le mode strict détecte les retours null via le check `$__lunarTmp === null` final.
 
-**Idée** :
-En mode strict, générer :
-```php
-if (!isset($obj)) throw ...
-if (!method_exists($obj, 'method')) throw ...
-echo htmlspecialchars($obj->method() ?? '', ...);
-```
+### [DX-02] Source maps complètes ✅
 
-### [DX-02] Source maps complètes
+IMP-04 ne reportait que la ligne du fichier compilé — décalée en cas d'extends ou de header de dépendances. Implémentation : `Runtime\SourceMap::inject()` insère des marqueurs `<?php /* L:file:N */ ?>` au début de chaque ligne du source (consommés silencieusement par PHP), et `SourceMap::resolve()` les lit en sens inverse depuis le compiled file pour retrouver `(file, line)` d'origine. Le catch de `render()` traduit désormais correctement les erreurs vers le `.tpl` source, y compris à travers extends.
 
-**Type** : Feature — **Complexité** : 3/5 — **Statut** : 🟡 Idée
+### [DX-03] Linter statique de templates en CLI ✅
 
-**Contexte** :
-IMP-04 a livré le source mapping de base. Une vraie source map (table `ligne_compilée → ligne_source`) permettrait de pointer la ligne exacte du `.tpl` même après extends/blocks/include.
+Nouvelle commande `bin/lunar-template template:lint` qui détecte sans exécution :
+- blocs non fermés (`[% if %]` sans `[% endif %]`, idem `for`/`block`)
+- fermetures orphelines
+- tokens non fermés (`[[`, `[#`, `[%`)
+- paires mal appariées (`[% if %]` suivi de `[% endfor %]`)
 
-### [DX-03] Linter de templates en CLI
-
-**Type** : Feature — **Complexité** : 3/5 — **Statut** : 🟡 Idée
-
-**Contexte** :
-`bin/lunar-template lint <fichier.tpl>` qui détecte :
-- tags non fermés (`[% if %]` sans `[% endif %]`)
-- variables jamais définies (avec un `--data-fixture=...`)
-- macros inconnues
-- syntaxe invalide
+Composants : `Linter\LintIssue` (DTO), `Linter\Linter` (analyse via pile), `Command\LintCommand` (rapport par fichier).
 
 ---
 
