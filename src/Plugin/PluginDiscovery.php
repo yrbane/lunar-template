@@ -25,10 +25,37 @@ use Lunar\Template\Macro\MacroInterface;
  * individuellement, ce qui est suffisant pour la majorité des cas et
  * évite la traversée du filesystem.
  */
-final readonly class PluginDiscovery
+/**
+ * @note Pas marquée `readonly class` à cause d'un cache statique :
+ *       PHP 8.5 interdit les valeurs par défaut sur les propriétés
+ *       statiques d'une readonly class. La prop d'instance reste
+ *       `private readonly` pour conserver l'esprit de MOD-03.
+ */
+final class PluginDiscovery
 {
-    public function __construct(private string $vendorDir)
+    /**
+     * Cache statique du contenu de installed.json indexé par vendorDir.
+     *
+     * Permet d'éviter une relecture/decode JSON à chaque appel
+     * discoverMacros() / discoverFilters() (et à chaque instanciation
+     * d'un nouvel engine dans le même process). La clé est le chemin
+     * absolu, donc plusieurs vendorDir distincts coexistent sans collision.
+     *
+     * @var array<string, list<array<string, mixed>>>
+     */
+    private static array $packagesCache = [];
+
+    public function __construct(private readonly string $vendorDir)
     {
+    }
+
+    /**
+     * Réinitialise le cache statique (pour les tests ou un long-running
+     * process qui voudrait re-scanner après une mise à jour Composer).
+     */
+    public static function clearCache(): void
+    {
+        self::$packagesCache = [];
     }
 
     /**
@@ -86,27 +113,31 @@ final readonly class PluginDiscovery
      */
     private function readPackages(): array
     {
+        if (\array_key_exists($this->vendorDir, self::$packagesCache)) {
+            return self::$packagesCache[$this->vendorDir];
+        }
+
         $path = $this->vendorDir . '/composer/installed.json';
         if (!is_file($path)) {
-            return [];
+            return self::$packagesCache[$this->vendorDir] = [];
         }
 
         $raw = file_get_contents($path);
         if ($raw === false) {
-            return [];
+            return self::$packagesCache[$this->vendorDir] = [];
         }
 
         $decoded = json_decode($raw, true);
         if (!\is_array($decoded)) {
-            return [];
+            return self::$packagesCache[$this->vendorDir] = [];
         }
 
         // Composer 2 stocke sous "packages", Composer 1 directement à la racine.
         $packages = $decoded['packages'] ?? $decoded;
         if (!\is_array($packages)) {
-            return [];
+            return self::$packagesCache[$this->vendorDir] = [];
         }
 
-        return array_values(array_filter($packages, 'is_array'));
+        return self::$packagesCache[$this->vendorDir] = array_values(array_filter($packages, 'is_array'));
     }
 }

@@ -17,6 +17,7 @@ class PluginDiscoveryTest extends TestCase
     {
         $this->tempDir = sys_get_temp_dir() . '/lunar_plugins_' . uniqid();
         mkdir($this->tempDir . '/composer', 0o755, true);
+        PluginDiscovery::clearCache(); // Garantit l'isolation entre tests
     }
 
     protected function tearDown(): void
@@ -126,6 +127,35 @@ class PluginDiscoveryTest extends TestCase
 
         $this->assertSame([], $discovery->discoverMacros());
         $this->assertSame([], $discovery->discoverFilters());
+    }
+
+    public function testCachesInstalledJsonReadAcrossInstances(): void
+    {
+        $this->writeInstalledJson([
+            [
+                'name' => 'vendor/sample',
+                'extra' => [
+                    'lunar-template' => [
+                        'macros' => ['Lunar\\Template\\Tests\\Fixtures\\Plugin\\SamplePluginMacro'],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Première lecture → met en cache
+        $first = (new PluginDiscovery($this->tempDir))->discoverMacros();
+        $this->assertCount(1, $first);
+
+        // Supprime le fichier — si pas de cache, la 2e lecture renverrait []
+        unlink($this->tempDir . '/composer/installed.json');
+
+        $second = (new PluginDiscovery($this->tempDir))->discoverMacros();
+        $this->assertCount(1, $second, 'Le cache doit absorber la disparition du fichier');
+
+        // clearCache() force le re-scan
+        PluginDiscovery::clearCache();
+        $third = (new PluginDiscovery($this->tempDir))->discoverMacros();
+        $this->assertSame([], $third);
     }
 
     public function testReturnsEmptyForInvalidInstalledJson(): void
