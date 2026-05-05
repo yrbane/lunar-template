@@ -425,6 +425,12 @@ class AdvancedTemplateEngine
             $source = preg_replace('/\[%\s*extends\s+[\'"](.+?)[\'"]\s*%\]/', '', $source);
             $blocks = $this->extractBlocks($source);
             $parentFile = "{$this->templatePath}/{$parentTemplate}";
+
+            // Support pour l'extension .tpl automatique
+            if (!file_exists($parentFile) && file_exists($parentFile . '.tpl')) {
+                $parentFile = $parentFile . '.tpl';
+            }
+
             if (!file_exists($parentFile)) {
                 throw TemplateException::parentTemplateNotFound($parentFile);
             }
