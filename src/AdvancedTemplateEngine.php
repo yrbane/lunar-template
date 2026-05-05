@@ -269,10 +269,14 @@ class AdvancedTemplateEngine
     {
         $index = 0;
 
-        // Protéger le contenu des balises <script>...</script>
+        // Protéger le contenu des balises <script>...</script> SAUF celles contenant des variables de template
         $source = preg_replace_callback(
             '/<script\b[^>]*>(.*?)<\/script>/is',
             function ($match) use (&$protected, &$index) {
+                // Ne pas protéger si le script contient des variables de template [[ ou [%
+                if (preg_match('/\[\[|\[%/', $match[1])) {
+                    return $match[0]; // Laisser tel quel pour que les variables soient traitées
+                }
                 $placeholder = '___PROTECTED_SCRIPT_' . $index++ . '___';
                 $protected[$placeholder] = $match[0];
 
@@ -281,10 +285,14 @@ class AdvancedTemplateEngine
             $source
         );
 
-        // Protéger le contenu des balises <style>...</style>
+        // Protéger le contenu des balises <style>...</style> SAUF celles contenant des variables de template
         $source = preg_replace_callback(
             '/<style\b[^>]*>(.*?)<\/style>/is',
             function ($match) use (&$protected, &$index) {
+                // Ne pas protéger si le style contient des variables de template [[ ou [%
+                if (preg_match('/\[\[|\[%/', $match[1])) {
+                    return $match[0]; // Laisser tel quel pour que les variables soient traitées
+                }
                 $placeholder = '___PROTECTED_STYLE_' . $index++ . '___';
                 $protected[$placeholder] = $match[0];
 
