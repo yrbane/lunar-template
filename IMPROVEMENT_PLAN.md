@@ -2,14 +2,14 @@
 
 Roadmap active du moteur de templates. Le plan d'audit initial (IMP-01..04) est livré ; ce document trace les chantiers restants et les nouvelles priorités.
 
-**Dernière mise à jour** : 2026-05-05
+**Dernière mise à jour** : 2026-05-05 (Milestone 1 livré)
 
 ---
 
 ## État actuel (après nettoyage)
 
 - **PHP** : 8.3+ avec typage strict
-- **Tests** : 1722 tests, ~98 % passants (33 erreurs + 3 échecs résiduels, tous documentés ci-dessous)
+- **Tests** : 1722 tests, **100 % passants**, 0 erreur, 0 échec
 - **Qualité** : PHPStan niveau 7, php-cs-fixer
 - **Documentation** : `README.md` (EN), `README.fr.md` (FR), `CLAUDE.md` (consignes projet)
 
@@ -25,65 +25,37 @@ Roadmap active du moteur de templates. Le plan d'audit initial (IMP-01..04) est 
 
 ---
 
-## Milestone 1 — Stabilisation (Priorité Haute)
+## Milestone 1 — Stabilisation ✅ Livré (2026-05-05)
 
-### [STAB-01] Architecture Cache : unifier CacheInterface
+### [STAB-01] Architecture Cache : unifier CacheInterface ✅
 
-**Type** : Bugfix / Refactoring — **Complexité** : 4/5 — **Statut** : 🔴 À faire
+Le code/tests utilisaient deux noms d'interface contradictoires : `CacheStorageInterface` côté src/, `CacheInterface` (inexistante) côté tests et `CacheWarmer`.
 
-**Problème** :
-`FilesystemCache implements CacheStorageInterface`, mais :
-- `CacheWarmer::__construct` typé `CacheInterface` (qui n'existe pas)
-- `FilesystemCacheTest::testImplementsCacheInterface` attend `CacheInterface`
-- Méthodes `has()`, `getPath()`, `getDirectory()` testées mais non exposées par `CacheStorageInterface`
+Refactor :
+- Renommage `CacheStorageInterface` → `CacheInterface`
+- Ajout `has(string $key, int $sourceTime): bool` et `getPath(string $key): ?string`
+- Suppression de `getCompiledFilePath()`
+- `AdvancedTemplateEngine::$cacheStorage` (public `CacheInterface`) initialisé sur le `cachePath`
 
-**Conséquence** : 33 erreurs sur la suite (CacheWarmer, FilesystemCache, ConstructorCreatesDirectories).
+Effet : -33 erreurs.
 
-**Critères d'acceptation** :
-- [ ] Décider entre PSR-16 (`Psr\SimpleCache\CacheInterface`) et l'interface maison.
-- [ ] Renommer/aligner `CacheStorageInterface` ↔ `CacheInterface` cohéremment.
-- [ ] Exposer `has()`, `getPath()`/`getDirectory()` via l'interface ou retirer ces tests.
-- [ ] Les 33 erreurs disparaissent.
+### [STAB-02] Anti-régression `testPathNormalization` ✅
 
-### [STAB-02] Fix `testPathNormalization` (leaks de dossiers `\tmp\` sous Linux)
+Le bug du leak `\tmp\…` était résolu implicitement par STAB-01 (FilesystemCache normalise désormais le chemin avant `mkdir`). Ajout d'une assertion `assertDirectoryDoesNotExist` pour empêcher la régression.
 
-**Type** : Bugfix tests — **Complexité** : 1/5 — **Statut** : 🔴 À faire
+### [STAB-03] Tokens de template dans les attributs `<script>/<style>` ✅
 
-**Problème** :
-Le test `tests/AdvancedTemplateEngineTest.php::testPathNormalization` fait :
-```php
-str_replace('/', '\\', $this->cacheDir . '_normalized')
-```
-Sous Linux, ceci crée un dossier littéral `\tmp\lunar-cache-tests-...\_normalized` à la racine du projet (les `\` ne sont pas séparateurs sous Linux). Le cleanup utilise le chemin original avec `/`, donc ne nettoie jamais.
+Deux corrections sur `protectScriptAndStyleContent` :
+1. La détection des tokens testait `$match[1]` (contenu) au lieu de `$match[0]` (balise complète) — les macros `##asset()##` apparaissent typiquement dans les attributs `src=`/`href=`.
+2. Le pattern `\[\[|\[%` étendu à `\[\[|\[%|##\w+\(.*?\)##` pour couvrir les macros.
 
-**Critères d'acceptation** :
-- [ ] Skip le test si `PHP_OS_FAMILY !== 'Windows'`, OU :
-- [ ] Mock le path sans toucher au filesystem, OU :
-- [ ] Cleanup correct du chemin backslash.
-- [ ] Plus aucun `\tmp\*` créé après une exécution complète des tests.
+Effet : -1 échec (`testFullBlogTemplateRendering`).
 
-### [STAB-03] Fix `testFullBlogTemplateRendering`
+### [STAB-04] Wrapping `TemplateException` aligné ✅
 
-**Type** : Bugfix — **Complexité** : 2/5 — **Statut** : 🔴 À faire
+`testTemplateThrowsExceptionDuringExecution` attendait `RuntimeException` brute ; l'engine enveloppe systématiquement dans `TemplateException` (source map IMP-04). Test mis à jour pour vérifier la `TemplateException` + son `getPrevious()`.
 
-**Problème** :
-Le test échoue sur l'assertion `src="/assets/js/blog.js"`. Le block `[% block scripts %]` du template enfant n'écrase pas correctement celui du parent dans certains cas d'héritage chaîné. Reproduit sur main avant nos commits récents — n'est pas une régression.
-
-**Critères d'acceptation** :
-- [ ] Identifier le défaut dans `processExtends` ou `extractBlocks`.
-- [ ] Ajouter un test unitaire ciblé (au-delà du test d'intégration).
-- [ ] Le test d'intégration passe sans modification.
-
-### [STAB-04] `testTemplateThrowsExceptionDuringExecution`
-
-**Type** : Bugfix tests — **Complexité** : 1/5 — **Statut** : 🔴 À faire
-
-**Problème** :
-Le test attend `RuntimeException` mais reçoit `TemplateException`. Soit le test est obsolète (refactoring de la hiérarchie d'exceptions non répercuté), soit l'implémentation devrait propager différemment.
-
-**Critères d'acceptation** :
-- [ ] Décider quel comportement est correct.
-- [ ] Aligner test ↔ implémentation.
+Effet : -1 échec.
 
 ---
 
