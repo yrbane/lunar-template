@@ -14,6 +14,9 @@ class TemplateCompiler implements CompilerInterface
      */
     public function compile(string $source): string
     {
+        // Strip template comments [# ... #] avant tout autre traitement
+        $source = $this->stripComments($source);
+
         // Process raw output [[! ... !]] (no escaping)
         $source = $this->compileRawOutput($source);
 
@@ -33,6 +36,15 @@ class TemplateCompiler implements CompilerInterface
         $source = $this->cleanupBlockTags($source);
 
         return $source;
+    }
+
+    /**
+     * Supprime les commentaires de template [# ... #] (multi-lignes pris en charge).
+     * Les commentaires ne sont jamais émis dans la sortie compilée.
+     */
+    private function stripComments(string $source): string
+    {
+        return (string) preg_replace('/\[#.*?#\]/s', '', $source);
     }
 
     /**

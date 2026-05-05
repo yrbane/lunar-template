@@ -194,4 +194,78 @@ class TemplateCompilerTest extends TestCase
         $this->assertStringContainsString('$active == true', $result);
         $this->assertStringNotContainsString('$true', $result);
     }
+
+    public function testCompileStripsSimpleComment(): void
+    {
+        $result = $this->compiler->compile('Avant [# commentaire #] Après');
+
+        $this->assertSame('Avant  Après', $result);
+    }
+
+    public function testCompileStripsCommentLeavingNoTrace(): void
+    {
+        $result = $this->compiler->compile('[# commentaire à ignorer #]');
+
+        $this->assertStringNotContainsString('[#', $result);
+        $this->assertStringNotContainsString('#]', $result);
+        $this->assertStringNotContainsString('commentaire', $result);
+    }
+
+    public function testCompileStripsMultilineComment(): void
+    {
+        $source = "Début\n[# ligne 1\nligne 2\nligne 3 #]\nFin";
+        $result = $this->compiler->compile($source);
+
+        $this->assertStringNotContainsString('ligne 1', $result);
+        $this->assertStringNotContainsString('ligne 2', $result);
+        $this->assertStringNotContainsString('ligne 3', $result);
+        $this->assertStringContainsString('Début', $result);
+        $this->assertStringContainsString('Fin', $result);
+    }
+
+    public function testCompileStripsMultipleComments(): void
+    {
+        $result = $this->compiler->compile('A[# c1 #]B[# c2 #]C');
+
+        $this->assertSame('ABC', $result);
+    }
+
+    public function testCompileStripsCommentNonGreedy(): void
+    {
+        $result = $this->compiler->compile('[# a #]X[# b #]');
+
+        $this->assertSame('X', $result);
+    }
+
+    public function testCompileStripsCommentBeforeVariable(): void
+    {
+        $result = $this->compiler->compile('[# masque le titre #][[ title ]]');
+
+        $this->assertStringNotContainsString('masque', $result);
+        $this->assertStringContainsString('$title', $result);
+    }
+
+    public function testCompileStripsCommentInsideBlock(): void
+    {
+        $result = $this->compiler->compile('[% if user %][# debug #]Hello[% endif %]');
+
+        $this->assertStringNotContainsString('debug', $result);
+        $this->assertStringContainsString('<?php if (!empty($user)): ?>', $result);
+        $this->assertStringContainsString('Hello', $result);
+    }
+
+    public function testCompileEmptyComment(): void
+    {
+        $result = $this->compiler->compile('A[##]B');
+
+        $this->assertSame('AB', $result);
+    }
+
+    public function testCompileCommentDoesNotTriggerVariableSubstitution(): void
+    {
+        $result = $this->compiler->compile('[# [[ should_not_render ]] #]');
+
+        $this->assertStringNotContainsString('should_not_render', $result);
+        $this->assertStringNotContainsString('<?=', $result);
+    }
 }

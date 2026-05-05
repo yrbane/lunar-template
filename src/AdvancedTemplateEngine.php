@@ -25,6 +25,7 @@ use Throwable;
  * - Les boucles avec [% for variable in array %] et [% endfor %].
  * - L'héritage et les blocs via [% extends 'parent.tpl' %], [% block blockName %] ... [% endblock %].
  * - Les macros avec la syntaxe ##macroName(arg1, arg2)##, par exemple pour générer des URLs.
+ * - Les commentaires multi-lignes avec [# ... #] (jamais émis dans la sortie).
  *
  * Les templates sources sont attendus dans un dossier (ex : template/) au format .tpl.
  * Les templates compilés seront stockés dans un dossier de cache.
@@ -319,6 +320,10 @@ class AdvancedTemplateEngine
      */
     protected function compileTemplate(string $source, array & $dependencies = [], string $templateFilePath = ''): string
     {
+        // Suppression des commentaires de template [# ... #] (multi-lignes)
+        // Effectuée en premier pour qu'aucun token interne ne soit interprété.
+        $source = (string) preg_replace('/\[#.*?#\]/s', '', $source);
+
         // Protéger le contenu des balises <script> et <style> du parsing
         $protectedContent = [];
         $source = $this->protectScriptAndStyleContent($source, $protectedContent);

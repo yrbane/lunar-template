@@ -12,6 +12,7 @@ namespace Lunar\Template\Parser;
  * - Blocks: [% block name %] ... [% endblock %]
  * - Extends: [% extends 'parent.tpl' %]
  * - Macros: ##macroName(args)##
+ * - Comments: [# ... #] (stripped at compile time)
  */
 class TemplateParser implements ParserInterface
 {

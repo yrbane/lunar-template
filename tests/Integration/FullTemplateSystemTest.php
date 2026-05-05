@@ -482,4 +482,38 @@ class FullTemplateSystemTest extends TestCase
         $this->assertStringContainsString('Email: Enabled', $result);
         $this->assertStringContainsString('Deep: Deep Value', $result);
     }
+
+    public function testCommentsAreStrippedFromRenderedOutput(): void
+    {
+        $template = <<<'TPL'
+            [# Ceci devrait être un commentaire ignoré au rendu #]
+            <h1>[[ title ]]</h1>
+            TPL;
+        file_put_contents($this->templatesDir . '/comment.tpl', $template);
+
+        $result = $this->engine->render('comment', ['title' => 'Bonjour']);
+
+        $this->assertStringNotContainsString('[#', $result);
+        $this->assertStringNotContainsString('#]', $result);
+        $this->assertStringNotContainsString('commentaire', $result);
+        $this->assertStringContainsString('<h1>Bonjour</h1>', $result);
+    }
+
+    public function testMultilineCommentsAreStrippedFromRenderedOutput(): void
+    {
+        $template = <<<'TPL'
+            [#
+              Bloc commentaire
+              sur plusieurs lignes
+            #]
+            <p>[[ message ]]</p>
+            TPL;
+        file_put_contents($this->templatesDir . '/multiline-comment.tpl', $template);
+
+        $result = $this->engine->render('multiline-comment', ['message' => 'Salut']);
+
+        $this->assertStringNotContainsString('Bloc commentaire', $result);
+        $this->assertStringNotContainsString('plusieurs lignes', $result);
+        $this->assertStringContainsString('<p>Salut</p>', $result);
+    }
 }
