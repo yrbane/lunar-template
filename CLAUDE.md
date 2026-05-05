@@ -1,29 +1,74 @@
-# lunar-template Development Guidelines
+# lunar-template — Consignes projet
 
-Auto-generated from all feature plans. Last updated: 2025-12-03
+Moteur de templates PHP autonome (PHP 8.3+, namespace `Lunar\Template`).
 
-## Active Technologies
+## Stack
 
-- PHP 8.3+ with strict typing enabled + None at runtime (PHPUnit, php-cs-fixer for development only) (001-template-engine)
+- **Runtime** : PHP 8.3+, `ext-mbstring`
+- **Dépendances** : `psr/simple-cache`, `yrbane/lunar-cli`, `yrbane/lunar-config`
+- **Dev** : PHPUnit, php-cs-fixer, PHPStan (niveau 7)
+- **Typage strict** : `declare(strict_types=1)` partout
 
-## Project Structure
+## Structure
 
 ```text
-src/
-tests/
+src/                     Code source (PSR-4 sous Lunar\Template\)
+├── AdvancedTemplateEngine.php   Façade tout-en-un
+├── Compiler/            Compilation source .tpl → PHP
+├── Parser/              Analyse de syntaxe
+├── Renderer/            Rendu + injection variables
+├── Cache/               FilesystemCache, CacheWarmer
+├── Filter/              50+ filtres pipe `[[ var | filtre ]]`
+├── Macro/               Macros `##macro(args)##`
+├── Compiler/Directive/  Directives `[% set %]`, `[% include %]`
+├── Html/                AttributeBag, HtmlEscaper
+├── Security/            PathValidator
+└── Exception/           Hiérarchie d'exceptions
+
+tests/                   Tests unitaires + intégration
+config/template.json     Configuration par défaut
+bin/lunar-template       Entrée CLI
 ```
 
-## Commands
+## Commandes
 
-# Add commands for PHP 8.3+ with strict typing enabled
+```bash
+composer install
+vendor/bin/phpunit                    # suite complète
+vendor/bin/phpunit --filter <Test>    # filtre
+vendor/bin/phpstan analyse            # analyse statique niveau 7
+vendor/bin/php-cs-fixer fix           # formatage
+```
 
-## Code Style
+## Conventions
 
-PHP 8.3+ with strict typing enabled: Follow standard conventions
+- **TDD** : test (rouge) avant code (vert).
+- **Code en anglais**, **commentaires et commits en français** (avec accents).
+- **SOLID, DRY, KISS** — pas d'abstraction prématurée.
+- **Sécurité par défaut** : échappement HTML automatique, pas de raw sans intention explicite (`[[! !]]` ou `|raw`).
 
-## Recent Changes
+## Syntaxe template (référence rapide)
 
-- 001-template-engine: Added PHP 8.3+ with strict typing enabled + None at runtime (PHPUnit, php-cs-fixer for development only)
+| Token | Usage |
+|---|---|
+| `[[ var ]]` | Variable échappée HTML |
+| `[[! var !]]` | Variable brute (sans échappement) |
+| `[[ var \| filtre ]]` | Variable filtrée |
+| `[[ var \| raw ]]` | Variable brute via filtre |
+| `[[ obj.method() ]]` | Appel de méthode |
+| `[# ... #]` | Commentaire (multi-ligne, jamais émis) |
+| `[% if/elseif/else/endif %]` | Conditions |
+| `[% for x in xs %] / [% endfor %]` | Boucles |
+| `[% extends 'base' %]` | Héritage (auto-extension `.tpl`) |
+| `[% block name %] / [% endblock %]` | Blocs |
+| `[% parent %]` | Inclusion du contenu parent |
+| `[% include 'partial' %]` | Inclusion |
+| `[% set var = value %]` | Assignation |
+| `##macro(args)##` | Macro |
 
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+Documentation complète : `README.md` (EN), `README.fr.md` (FR).
+
+## État du code
+
+- 100% de couverture de tests (PHPStan niveau 7).
+- IMPROVEMENT_PLAN.md liste la roadmap active (post-livraison initiale).
