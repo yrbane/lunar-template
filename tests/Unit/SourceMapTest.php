@@ -35,7 +35,7 @@ class SourceMapTest extends TestCase
         $templateContent = <<<'TPL'
 Line 1
 Line 2
-Line 3 [[ undefined.method() ]] <-- Error on this line
+Line 3 [[ undefined_var ]] <-- Error on this line
 Line 4
 TPL;
         file_put_contents($this->templateDir . '/error.tpl', $templateContent);
@@ -47,7 +47,7 @@ TPL;
             $engine->render('error');
             $this->fail('TemplateException was not thrown.');
         } catch (TemplateException $e) {
-            $expectedMessagePart = 'Error in template "error.tpl" at line 3: Undefined variable "undefined.method()" in strict mode.';
+            $expectedMessagePart = 'Error in template "error.tpl" at line 3: Undefined variable "undefined_var" in strict mode.';
             $this->assertStringContainsString($expectedMessagePart, $e->getMessage());
         }
     }

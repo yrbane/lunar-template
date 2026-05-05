@@ -359,9 +359,17 @@ class AdvancedTemplateEngine
             // Convertit la notation point en acces tableau/objet PHP
             $phpVar = $this->convertDotNotation($expression);
 
+            // Détecter si c'est un appel de méthode (contient ->xxx())
+            $isMethodCall = str_contains($phpVar, '->');
+
             // Si |raw, pas d'échappement HTML
             if ($isRaw) {
                 return '<?= (string)(' . $phpVar . ' ?? \'\') ?>';
+            }
+
+            // Pour les appels de méthodes, pas de vérification isset (invalide en PHP)
+            if ($isMethodCall) {
+                return '<?= htmlspecialchars((string)(' . $phpVar . ' ?? \'\'), ENT_QUOTES, \'UTF-8\') ?>';
             }
 
             // Injecter la logique du mode strict directement dans le code PHP généré
@@ -598,12 +606,16 @@ class AdvancedTemplateEngine
         // Premier element est la variable racine
         $result = '$' . array_shift($parts);
 
-        // Les autres elements deviennent des acces tableau
+        // Les autres elements deviennent des acces tableau ou methodes
         foreach ($parts as $part) {
-            // Gere les index numeriques et les cles string
-            if (ctype_digit($part)) {
+            // Gere les appels de methodes (contient des parentheses)
+            if (str_contains($part, '(')) {
+                $result .= '->' . $part;
+            } elseif (ctype_digit($part)) {
+                // Gere les index numeriques
                 $result .= '[' . $part . ']';
             } else {
+                // Gere les cles string
                 $result .= '[\'' . $part . '\']';
             }
         }
