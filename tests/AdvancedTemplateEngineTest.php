@@ -584,14 +584,20 @@ class AdvancedTemplateEngineTest extends TestCase
 
     public function testTemplateThrowsExceptionDuringExecution(): void
     {
-        // Create a template that will throw an exception during execution
+        // Le template émet une RuntimeException à l'exécution.
+        // L'engine l'enveloppe dans une TemplateException avec source map
+        // (nom du template + ligne) et conserve l'exception d'origine via getPrevious().
         $template = '<?php throw new \RuntimeException("Test exception"); ?>';
         file_put_contents($this->templatesDir . '/exception.tpl', $template);
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Test exception');
-
-        $this->engine->render('exception');
+        try {
+            $this->engine->render('exception');
+            $this->fail('TemplateException attendue');
+        } catch (TemplateException $e) {
+            $this->assertStringContainsString('exception.tpl', $e->getMessage());
+            $this->assertStringContainsString('Test exception', $e->getMessage());
+            $this->assertInstanceOf(RuntimeException::class, $e->getPrevious());
+        }
     }
 
     public function testCacheDirectoryNotWritable(): void
