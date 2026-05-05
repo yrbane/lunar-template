@@ -838,7 +838,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Tokens allowed inside `<script>`/`<style>`**: variables, conditions and macros (including in `src=`, `href=` attributes)
 - **Complete source maps**: errors resolve to the original `.tpl` line, even across `extends` chains
 - **Static linter**: `lunar-template template:lint` reports unclosed blocks, orphan closes, and mismatched tokens without executing templates
+- **PSR-16 adapter**: `Cache\Psr16Adapter` wraps any `Psr\SimpleCache\CacheInterface` (Redis, Memcached, APCu, …)
+- **Plugin discovery**: third-party packages can register macros/filters via `composer.json` `extra.lunar-template`
 - **Cache**: unified `CacheInterface` (methods `has()`, `getPath()`, `getDirectory()` part of the contract)
+- **`final readonly class`**: `Psr16Adapter`, `PluginDiscovery`, `ParsedTemplate`, `HtmlEscaper`, `InheritanceResolver`
 - **Bugfix**: string detection regex in `convertMacroArgument`
 
 ### v1.4.0

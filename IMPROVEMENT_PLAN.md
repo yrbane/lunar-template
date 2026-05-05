@@ -2,7 +2,7 @@
 
 Roadmap active du moteur de templates. Le plan d'audit initial (IMP-01..04) est livré ; ce document trace les chantiers restants et les nouvelles priorités.
 
-**Dernière mise à jour** : 2026-05-05 (Milestones 1 & 2 livrés)
+**Dernière mise à jour** : 2026-05-05 (Milestones 1, 2 & 3 livrés)
 
 ---
 
@@ -87,30 +87,19 @@ Composants : `Linter\LintIssue` (DTO), `Linter\Linter` (analyse via pile), `Comm
 
 ---
 
-## Milestone 3 — Modernisation (Priorité Basse)
+## Milestone 3 — Modernisation ✅ Livré (2026-05-05)
 
-### [MOD-01] Adaptateur PSR-16 (anciennement IMP-05)
+### [MOD-01] Adaptateur PSR-16 ✅
 
-**Type** : Refactoring — **Complexité** : 3/5 — **Statut** : 🟡 Idée
+`src/Cache/Psr16Adapter.php` wrappe un `Psr\SimpleCache\CacheInterface` (Redis, Memcached, APCu, …) à l'interface Lunar. Compromis pragmatique : matérialise les contenus dans un `writeDir` local pour permettre `include`, et compare un timestamp companion stocké côté PSR-16 (clé `<key>.lunar_mtime`) pour `has(key, sourceTime)`.
 
-Remplacer ou wrapper `FilesystemCache` derrière `Psr\SimpleCache\CacheInterface` (déjà déclaré en dépendance dans `composer.json`). Ouvre la voie à Redis/Memcached/APCu.
+### [MOD-02] Auto-discovery de macros/filtres via composer extra ✅
 
-**Critères d'acceptation** :
-- [ ] `Lunar\Template\Cache\Psr16Adapter` qui wrappe un `Psr\SimpleCache\CacheInterface`.
-- [ ] `TemplateRenderer` accepte au choix `CacheStorageInterface` ou `CacheInterface` PSR-16.
-- [ ] Tests avec un mock PSR-16 (réutilisable).
+`src/Plugin/PluginDiscovery.php` lit `vendor/composer/installed.json` et trouve les classes déclarées dans `extra.lunar-template.macros` / `.filters` de chaque package. Validation de l'interface (`MacroInterface` / `FilterInterface`) avant instanciation. Helper `AdvancedTemplateEngine::loadPluginMacros()` pour intégration en une ligne.
 
-### [MOD-02] Plugin de macros
+### [MOD-03] Classes immuables en `final readonly class` ✅
 
-**Type** : Architecture — **Complexité** : 3/5 — **Statut** : 🟡 Idée
-
-Système de plugins permettant à un package tiers (ex. un thème) d'enregistrer ses macros et filtres via auto-discovery (composer extra).
-
-### [MOD-03] Cible PHP 8.4 (readonly properties partout)
-
-**Type** : Refactoring — **Complexité** : 2/5 — **Statut** : 🟡 Idée
-
-Une fois la 8.3 obsolète, passer les DTOs/services en `readonly class`.
+Conversion ciblée des classes sans état mutable ni besoin d'extension : `Psr16Adapter`, `PluginDiscovery`, `ParsedTemplate`, `HtmlEscaper`, `InheritanceResolver`. Formalise l'immutabilité au niveau du langage. Les macros/filtres restent classiques (chacun encapsule via `private readonly`), une conversion massive serait du churn pour peu de bénéfice.
 
 ---
 
