@@ -29,11 +29,12 @@ use Lunar\Cli\Application;
 use Lunar\Template\Command\CheckCommand;
 use Lunar\Template\Command\ClearCommand;
 use Lunar\Template\Command\CompileCommand;
+use Lunar\Template\Command\LintCommand;
 use Lunar\Template\Command\ListCommand;
 use Lunar\Template\Command\RenderCommand;
 use Lunar\Template\Command\WarmCommand;
 
-$app = new Application('Lunar Template', '1.4.0');
+$app = new Application('Lunar Template', '1.5.0');
 
 // Register all commands
 $app->registerCommandClass(RenderCommand::class);
@@ -41,6 +42,7 @@ $app->registerCommandClass(CompileCommand::class);
 $app->registerCommandClass(WarmCommand::class);
 $app->registerCommandClass(ClearCommand::class);
 $app->registerCommandClass(CheckCommand::class);
+$app->registerCommandClass(LintCommand::class);
 $app->registerCommandClass(ListCommand::class);
 
 exit($app->run($argv));
