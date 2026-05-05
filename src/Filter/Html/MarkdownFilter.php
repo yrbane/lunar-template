@@ -44,6 +44,9 @@ final class MarkdownFilter extends AbstractFilter
     /**
      * Conversion via league/commonmark si la lib est installée.
      */
+    /**
+     * @phpstan-ignore-next-line — la classe CommonMark est optionnelle.
+     */
     private function applyWithCommonMark(string $text): string
     {
         /** @var class-string $converterClass */
@@ -52,7 +55,7 @@ final class MarkdownFilter extends AbstractFilter
 
         // L'API de commonmark v2 expose convert() qui retourne un objet
         // RenderedContentInterface avec __toString().
-        return (string) $converter->convert($text);
+        return (string) $converter->convert($text); // @phpstan-ignore-line
     }
 
     private function applyWithRegex(string $text): string
